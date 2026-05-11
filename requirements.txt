@@ -1,0 +1,37 @@
+# IntApp v2 — Dependencias
+# Instalar con: pip install -r requirements.txt
+#
+# Versiones exactas de producción (validadas 2026-05-03).
+# Las versiones >= permiten actualizaciones de seguridad dentro del minor.
+# SHAP y scikit-learn tienen versiones fijadas: cambios de API rompieron
+# código en el pasado (shap 0.41→0.51 cambió formato de KernelExplainer,
+# sklearn 1.4→1.5 eliminó multi_class en LogisticRegression).
+
+# --- Core ML ---
+scikit-learn==1.7.2
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.16.3
+joblib==1.5.2
+
+# --- Interpretabilidad (versión fijada: API de KernelExplainer cambia entre releases) ---
+shap==0.51.0
+
+# --- Visualización ---
+matplotlib==3.10.6
+plotly==6.3.0
+seaborn>=0.12          # solo usado en exploración; menor criticidad
+
+# --- Aplicación web ---
+streamlit==1.51.0
+openpyxl==3.1.5        # lectura/escritura Excel desde Streamlit
+fpdf2>=2.7             # generación de informes PDF
+
+# --- Notebooks y entorno ---
+nbformat==5.10.4
+nbconvert==7.16.6
+ipykernel==6.31.0
+jupyter==1.1.1
+
+# --- Testing ---
+pytest>=7.4
