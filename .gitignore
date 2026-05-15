@@ -17,6 +17,9 @@ build/
 # Archivos temporales de Office
 ~$*
 
+# Tests cache
+.pytest_cache/
+
 # Anaconda
 anaconda_projects/
 

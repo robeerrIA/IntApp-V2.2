@@ -3,10 +3,10 @@
 Sistema de evaluación clínica basado en machine learning para la predicción del riesgo
 de lesión de miembro inferior en deportistas. Desarrollado como TFM de Fisioterapia.
 
-A partir de 23 variables clínicas (fuerza muscular, movilidad articular, control
-neuromuscular y contexto del deportista), el sistema clasifica el riesgo en tres
-niveles (bajo / medio / alto) y explica qué variables han influido más en la
-predicción mediante análisis SHAP.
+A partir de 22 variables clínicas originales (fuerza muscular, movilidad articular, control
+neuromuscular y contexto del deportista), expandidas a 34 columnas mediante medición bilateral,
+el sistema clasifica el riesgo en tres niveles (bajo / medio / alto) y explica qué variables
+han influido más en la predicción mediante importancia de variables del modelo (feature importance).
 
 ---
 
@@ -20,55 +20,66 @@ pip install -r requirements.txt
 jupyter lab
 
 # 3. Lanzar la aplicación
-streamlit run app.py
+streamlit run app/streamlit_app.py
 ```
-
-Para instrucciones detalladas dirigidas al autor clínico del proyecto, consulta
-`INSTRUCCIONES_ROBERTO.md`.
 
 ---
 
 ## Estructura del proyecto
 
 ```
-IntApp/
+IntApp v2/
 │
-├── notebooks/                    # Pipeline paso a paso
-│   ├── 01_generacion_datos.ipynb       Generación de datos sintéticos
-│   ├── 02_exploracion_datos.ipynb      Análisis exploratorio
-│   ├── 03_entrenamiento_modelo.ipynb   Entrenamiento y comparación de modelos
+├── app/
+│   └── streamlit_app.py                Interfaz clínica web (Streamlit)
+│
+├── notebooks/                          # Pipeline paso a paso
+│   ├── 01_generacion_datos.ipynb       Generación del dataset sintético (n=500, semilla=42)
+│   ├── 02_exploracion_datos.ipynb      Análisis exploratorio y distribuciones
+│   ├── 03_entrenamiento_modelo.ipynb   Entrenamiento y comparación de modelos (RF, RL, GB)
 │   ├── 04_interpretacion_modelo.ipynb  Importancia de variables (SHAP)
-│   ├── 05_analisis_sensibilidad.ipynb  Análisis de sensibilidad
+│   ├── 05_analisis_sensibilidad.ipynb  Análisis de sensibilidad clínica
 │   └── 06_validacion_sinteticos.ipynb  Validación final
 │
-├── src/                          # Módulos Python del proyecto
-│   ├── variables.py                    Definición de las 23 variables clínicas
+├── src/                                # Módulos Python del proyecto
+│   ├── variables.py                    22 variables clínicas, umbrales y protocolo v2.2
 │   ├── generador_datos.py              Generación de datos sintéticos
-│   ├── preprocesador.py                Pipeline de preprocesamiento
-│   ├── modelo.py                       Entrenamiento (RF, RL, GB)
-│   └── evaluador_riesgo.py             Evaluación individual + SHAP
+│   ├── preprocesador.py                Pipeline de preprocesamiento y normalización
+│   ├── modelo.py                       Entrenamiento (RF, RL, GB) y serialización
+│   └── evaluador_riesgo.py             Evaluación individual + importancia de variables
 │
-├── docs/                         # Documentación clínica
-│   └── protocolo_scoring.md            Protocolo de scoring (completar antes del código)
+├── docs/                               # Documentación clínica
+│   ├── Protocolo_Scoring_Roberto_Franco.docx   Protocolo de scoring v2.2
+│   └── Evidencia_Valores_Normativos.md         Evidencia bibliográfica de umbrales
 │
 ├── datos/
-│   └── sinteticos/                     Dataset sintético generado
+│   ├── sinteticos/                     Dataset sintético de exploración (n=500)
+│   └── procesados/                     Datasets preprocesados para entrenamiento
 │
-├── figuras/                      # Gráficos generados automáticamente
+├── figuras/                            # Gráficos generados por los notebooks
 │
-├── modelos/                      # Modelos entrenados (generados al ejecutar nb 03)
+├── modelos/                            # Modelos entrenados
+│   ├── mejor_modelo.pkl                Modelo clínico desplegado (GB calibrado)
+│   ├── scaler.pkl                      StandardScaler ajustado
+│   ├── modelo_rf.joblib                Random Forest (comparación, nb04)
+│   ├── modelo_rl.joblib                Regresión Logística (comparación, nb04)
+│   └── modelo_gb.joblib                Gradient Boosting base (comparación, nb04)
 │
-├── requirements.txt              # Dependencias Python
-├── INSTRUCCIONES_ROBERTO.md      # Guía completa para el autor clínico
-└── README.md                     # Este archivo
+├── scripts/
+│   └── generar_shap.py                 Script standalone para análisis SHAP
+│
+├── tests/                              # Tests unitarios
+│   ├── test_evaluador_riesgo.py
+│   └── test_preprocesador.py
+│
+└── requirements.txt                    # Dependencias Python
 ```
 
 ---
 
 ## Autor
 
-- **Nombre**: [TODO — nombre completo]
-- **Titulación**: Grado en Fisioterapia — TFM
+- **Nombre**: Roberto Franco Yagüe
+- **Titulación**: MFP en IA Aplicada al Deporte — TFM
 - **Institución**: Universidad Europea
-- **Tutor/a**: [TODO — nombre del tutor]
 - **Curso**: 2025-2026

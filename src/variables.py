@@ -57,7 +57,7 @@ ESTRATIFICACIÓN: cada variable de fuerza incorpora `umbral_riesgo_base` con la
              tabla del protocolo v2.1.
 ZONAS GRISES: flag `aplica_zona_gris` para uso en generar_label() del v2.2.
 
-Total de variables originales: 21.
+Total de variables originales: 22.
 """
 
 # =============================================================================
