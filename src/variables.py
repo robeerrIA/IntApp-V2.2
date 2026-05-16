@@ -50,14 +50,15 @@ ELIMINADAS:  triple_hop, rotacion_externa_cadera (movilidad), flexoextension_rod
 AÑADIDAS:    rotadores_externos_cadera (fuerza, bilateral),
              y_balance_cs (control, bilateral, % longitud miembro),
              thomas_test (movilidad, bilateral, binaria fusionada),
-             acwr (contexto), nivel_actividad (contexto, categórica).
+             nivel_actividad (contexto, categórica).
+ELIMINADAS v2.3: acwr, pss4, horas_sueno (sustituidas funcionalmente por hooper_index).
 ELIMINADAS también: gluteo_mayor, flexores_cadera (fuerza),
              extensibilidad_isquiotibial, extension_primer_dedo (movilidad).
 ESTRATIFICACIÓN: cada variable de fuerza incorpora `umbral_riesgo_base` con la
              tabla del protocolo v2.1.
 ZONAS GRISES: flag `aplica_zona_gris` para uso en generar_label() del v2.2.
 
-Total de variables originales: 22.
+Total de variables originales: 19.  # v2.3: eliminadas acwr, pss4, horas_sueno
 """
 
 # =============================================================================
@@ -97,37 +98,6 @@ def grupo_edad_clave(edad: float | int) -> str:
         return "36_50"
     else:
         return "51_65"
-
-
-# Tabla de umbrales del ACWR estratificada por nivel de actividad.
-# Cada nivel define la zona segura, los límites de riesgo moderado y
-# el umbral de riesgo alto. Justificación: protocolo v2.1, sección 2.3.
-UMBRALES_ACWR: dict[str, dict[str, float | tuple[float, float]]] = {
-    "sedentario": {
-        "zona_segura":      (0.80, 1.20),
-        "moderado_alto":    1.20,   # entre zona segura y riesgo alto
-        "moderado_bajo":    0.70,   # carga insuficiente = desacondicionamiento
-        "riesgo_alto":      1.40,
-    },
-    "recreacional": {
-        "zona_segura":      (0.80, 1.30),
-        "moderado_alto":    1.30,
-        "moderado_bajo":    0.70,
-        "riesgo_alto":      1.50,
-    },
-    "activo": {
-        "zona_segura":      (0.80, 1.30),
-        "moderado_alto":    1.30,
-        "moderado_bajo":    0.75,
-        "riesgo_alto":      1.50,
-    },
-    "elite": {
-        "zona_segura":      (0.85, 1.40),
-        "moderado_alto":    1.40,
-        "moderado_bajo":    0.80,
-        "riesgo_alto":      1.60,
-    },
-}
 
 
 # Umbrales del score ponderado total (protocolo v2.1, sección 1.2).
@@ -702,11 +672,11 @@ VARIABLES_CONTEXTO = {
         "umbral_riesgo_base": None,
         "descripcion": (
             "Nivel de actividad del sujeto, usado como factor multiplicador "
-            "del umbral base de fuerza (× 0.85, × 1.00, × 1.15, × 1.30) y "
-            "para seleccionar la fila de UMBRALES_ACWR. Definiciones operativas "
-            "(min/semana de actividad moderada): sedentario < 150; recreacional "
-            "150-300; activo > 300 con entrenamiento estructurado; élite ≥ 6 "
-            "sesiones/semana con competición federada (protocolo v2.1 sección 2.2)."
+            "del umbral base de fuerza (× 0.85, × 1.00, × 1.15, × 1.30). "
+            "Definiciones operativas (min/semana de actividad moderada): "
+            "sedentario < 150; recreacional 150-300; activo > 300 con "
+            "entrenamiento estructurado; élite ≥ 6 sesiones/semana con "
+            "competición federada (protocolo v2.3 sección 2.2)."
         ),
     },
     "historial_lesional": {
@@ -771,82 +741,6 @@ VARIABLES_CONTEXTO = {
             "🛑 NRS > 5 → interrumpir la evaluación. Caso no concluyente: reprogramar cuando NRS ≤ 3."
         ),
     },
-    "acwr": {
-        "nombre_display": "ACWR — Acute:Chronic Workload Ratio",
-        "bloque": "contexto",
-        "unidad": "ratio",
-        "bilateral": False,
-        "rango_normal": (0.8, 1.3),
-        "rango_sintetico": (0.4, 2.0),
-        "tipo": "continua",
-        "peso_scoring": 2,   # reducido 3→2: Windt & Gabbett (2018) relación no monotónica; limitaciones documentadas
-        "aplica_zona_gris": False,      # zonas ya definidas por nivel en UMBRALES_ACWR
-        "umbral_riesgo_base": "ver_UMBRALES_ACWR",  # se resuelve en generar_label
-        "descripcion": (
-            "Ratio entre la carga de la última semana (aguda) y la media de las "
-            "4 semanas previas (crónica). Cálculo: ACWR = sRPE_semana_actual / "
-            "media(sRPE_4_semanas_anteriores). sRPE = RPE Borg CR10 × duración. "
-            "Si no hay registro estructurado, se usa la subescala Fatiga del "
-            "Hooper Index como proxy (≥ 6 en últimas 3 semanas → ACWR > 1.3). "
-            "Zonas estratificadas por nivel de actividad: ver UMBRALES_ACWR. "
-            "Referencias: Gabbett (2016) BJSM 50(5):273-280; "
-            "Myers et al. (2020) J Sport Rehabil 29:127-130. "
-            "LIMITACIONES CONOCIDAS DEL ACWR: "
-            "(1) La relación ACWR-lesión puede no ser monotónica — Windt & Gabbett "
-            "(2018) BJSM 52:1559-1560 advierten que el ACWR elevado puede reflejar "
-            "alta aptitud crónica tanto como sobrecarga aguda (confusión estadística). "
-            "(2) El promedio rodante de 4 semanas infrapondera la carga reciente "
-            "respecto a modelos exponencialmente ponderados (EWMA); Menaspà (2017) "
-            "BMJ Open Sport Exerc Med 3:e000163 muestra que EWMA reduce el retraso "
-            "de respuesta. "
-            "(3) Los umbrales aquí son orientativos y no están validados "
-            "prospectivamente en esta población sintética; aplicar con cautela en "
-            "ausencia de un registro objetivo de carga (GPS, acelerometría, sRPE)."
-        ),
-        "protocolo": (
-            "🧮 Cálculo: ACWR = carga semana actual ÷ media de las 4 semanas previas.\n"
-            "📊 Carga semanal = Σ (RPE Borg CR10 × duración en minutos) de cada sesión.\n"
-            "🗣 Preguntar el RPE 30 minutos después de cada sesión: «¿Cómo de duro fue el entreno? 0-10».\n"
-            "📅 Recoger datos de las últimas 5 semanas; calcular la media de las semanas 2-5 (crónica).\n"
-            "📝 Introducir el ratio resultante. Si no hay registro objetivo: estimar según la subescala "
-            "Fatiga del Hooper Index (≥ 6 en las últimas 3 semanas sugiere ACWR > 1.3)."
-        ),
-    },
-    "pss4": {
-        "nombre_display": "PSS-4 — Estrés percibido",
-        "bloque": "contexto",
-        "unidad": "puntuación 0-16",
-        "bilateral": False,
-        "rango_normal": (0, 8),
-        "rango_sintetico": (0, 16),
-        "tipo": "ordinal",
-        "peso_scoring": 1,
-        "aplica_zona_gris": False,
-        "umbral_riesgo_base": {
-            "umbral": 9,
-            "_unidad_umbral": "puntuacion",
-        },
-        "descripcion": (
-            "Perceived Stress Scale de 4 ítems (Cohen et al., 1983). Mide el grado "
-            "en que el deportista percibe su vida como impredecible, incontrolable o "
-            "sobrecargada en el último mes. Rango 0-16; puntuación ≥ 9 indica estrés "
-            "percibido elevado. El estrés psicológico actúa como modulador de la "
-            "atención y el control neuromuscular, incrementando el riesgo de lesión "
-            "(modelo estrés-lesión, Williams & Andersen, 1998). "
-            "Referencias: Cohen et al. (1983) J Health Soc Behav 24:385-396; "
-            "Williams & Andersen (1998) J Sport Exerc Psychol 20:2-25."
-        ),
-        "protocolo": (
-            "📋 Administrar ANTES de la sesión (estado basal, no influenciado por el esfuerzo).\n"
-            "📝 4 ítems, escala 0 (nunca) a 4 (muy a menudo), referidos al último mes:\n"
-            "   1. «¿Con qué frecuencia has sentido que no podías controlar las cosas importantes de tu vida?»\n"
-            "   2. «¿Con qué frecuencia te has sentido nervioso o estresado?»\n"
-            "   3. «¿Con qué frecuencia te has sentido seguro de tu capacidad para manejar tus problemas?» (invertido)\n"
-            "   4. «¿Con qué frecuencia has sentido que las cosas iban a tu manera?» (invertido)\n"
-            "🧮 Ítems 3 y 4 se puntúan al revés (0=4, 1=3, 2=2, 3=1, 4=0). Suma total: 0-16.\n"
-            "🛑 Puntuación ≥ 9 = estrés percibido elevado; anotar en el informe."
-        ),
-    },
     "hooper_index": {
         "nombre_display": "Hooper Index — Bienestar deportivo",
         "bloque": "contexto",
@@ -855,7 +749,7 @@ VARIABLES_CONTEXTO = {
         "rango_normal": (4, 17),
         "rango_sintetico": (4, 28),
         "tipo": "continua",
-        "peso_scoring": 2,
+        "peso_scoring": 3,   # elevado 2→3 v2.3: único indicador de sueño/estrés/fatiga/recuperación
         "aplica_zona_gris": False,
         "umbral_riesgo_base": {
             "umbral": 22,
@@ -880,41 +774,6 @@ VARIABLES_CONTEXTO = {
             "   4. Calidad del sueño: «¿Cómo describes tu calidad de sueño?» (1=muy muy buena, 7=muy muy mala)\n"
             "🧮 Suma de los 4 ítems: 4-28. Introducir el total.\n"
             "🛑 Puntuación ≥ 22 = recuperación insuficiente; anotar en el informe."
-        ),
-    },
-    "horas_sueno": {
-        "nombre_display": "Horas de sueño por noche",
-        "bloque": "contexto",
-        "unidad": "horas",
-        "bilateral": False,
-        "rango_normal": (7, 9),
-        "rango_sintetico": (4, 12),
-        "tipo": "continua",
-        "peso_scoring": 2,
-        "aplica_zona_gris": False,
-        "umbral_riesgo_base": {
-            "umbral_min": 7,
-            "_unidad_umbral": "horas",
-        },
-        "descripcion": (
-            "Duración media de sueño por noche durante la última semana. "
-            "Milewski et al. (2014, Pediatrics, n=112) encontraron que deportistas "
-            "que dormían < 8 h/noche tenían 1.7 veces más riesgo de lesión (OR 1.7, "
-            "IC95% 1.0-2.9). Fullagar et al. (2015, BJSM) confirman la relación "
-            "entre privación de sueño y deterioro del rendimiento y recuperación "
-            "en atletas adultos. El umbral de riesgo del protocolo se fija en < 7 h "
-            "(criterio conservador para adultos; las guías de sueño recomiendan "
-            "7-9 h para adultos de 18-64 años, NSF 2015). "
-            "Referencias: Milewski et al. (2014) Pediatrics 133(3):e735-740; "
-            "Fullagar et al. (2015) BJSM 49(8):518-522; "
-            "Hirshkowitz et al. (2015) Sleep Health 1(1):40-43 (NSF)."
-        ),
-        "protocolo": (
-            "🗣 Preguntar: «¿Cuántas horas has dormido de media por noche durante la última semana?»\n"
-            "📝 Registrar la estimación del deportista en horas (puede usar decimales: 6.5 = 6h 30min).\n"
-            "💡 Si hay variabilidad alta entre días, promediar los últimos 7 días.\n"
-            "🛑 < 7 h = sueño insuficiente; combinar con Hooper (ítem calidad de sueño) para contexto completo.\n"
-            "⚠ No confundir con el tiempo en cama — preguntar específicamente por horas de sueño real."
         ),
     },
 }

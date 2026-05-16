@@ -62,7 +62,6 @@ from src.variables import (
     COLUMNAS_CONTROL,
     COLUMNAS_CONTEXTO,
     FACTORES_ACTIVIDAD,
-    UMBRALES_ACWR,
     grupo_edad_clave,
     SCORE_UMBRAL_ALTO,
     SCORE_UMBRAL_MEDIO,
@@ -82,7 +81,7 @@ _CORR_CONTROL      = 0.50   # correlación entre variables de control
 # Probabilidad de generar un caso "frontera" para cada deportista.
 # Los frontera tienen valores forzados cerca del umbral en 1-2 variables clave,
 # para densificar la zona de decisión y mejorar el aprendizaje del modelo.
-_PROB_FRONTERA = 0.25
+_PROB_FRONTERA = 0.35
 
 # Probabilidad de generar un caso "no concluyente" (NRS > 5).
 _PROB_NO_CONCLUYENTE = 0.03
@@ -357,24 +356,10 @@ def _generar_bloque_contexto(n: int, rng: np.random.Generator) -> pd.DataFrame:
     nrs_base[forzar_alto] = rng.uniform(6, 9, size=forzar_alto.sum())
     datos["dolor_percibido_nrs"] = np.round(_clip_array(nrs_base, rango_nrs)).astype(int)
 
-    # ACWR — log-normal centrada en 1.0
-    acwr_raw = rng.lognormal(mean=0.0, sigma=0.22, size=n)
-    datos["acwr"] = _clip_array(acwr_raw, VARIABLES["acwr"]["rango_sintetico"]).round(2)
-
-    # PSS-4 — Estrés percibido (0-16)
-    rango_pss4 = VARIABLES["pss4"]["rango_sintetico"]
-    pss4_raw = rng.normal(7.0, 3.5, size=n)
-    datos["pss4"] = np.round(_clip_array(pss4_raw, rango_pss4)).astype(int)
-
     # Hooper Index — Bienestar deportivo (4-28)
     rango_hooper = VARIABLES["hooper_index"]["rango_sintetico"]
     hooper_raw = rng.normal(14.0, 5.0, size=n)
     datos["hooper_index"] = np.round(_clip_array(hooper_raw, rango_hooper)).astype(int)
-
-    # Horas de sueño por noche
-    rango_sueno = VARIABLES["horas_sueno"]["rango_sintetico"]
-    sueno_raw = rng.normal(7.2, 1.1, size=n)
-    datos["horas_sueno"] = np.round(_clip_array(sueno_raw, rango_sueno), 1)
 
     return pd.DataFrame(datos, columns=COLUMNAS_CONTEXTO)
 
@@ -407,7 +392,6 @@ def _inyectar_casos_frontera(df: pd.DataFrame, rng: np.random.Generator) -> pd.D
         ("y_balance_cs_izq",           lambda peso, gen: rng.uniform(82.0, 95.0)),
         ("single_leg_squat_valgo_der", lambda peso, gen: int(rng.choice([1, 2, 2, 3]))),
         ("single_leg_squat_valgo_izq", lambda peso, gen: int(rng.choice([1, 2, 2, 3]))),
-        ("acwr",                       lambda peso, gen: rng.uniform(1.30, 1.55)),
         ("historial_lesional",         lambda peso, gen: int(rng.integers(4, 8))),
     ]
 
@@ -624,46 +608,9 @@ def _evaluar_fila(fila: pd.Series) -> dict:
 
     historial_muy_alto = fila["historial_lesional"] >= info_hl["umbral_riesgo_base"]["umbral_alto"]
 
-    info_ac = VARIABLES_ORIGINALES["acwr"]
-    zonas = UMBRALES_ACWR.get(nivel, UMBRALES_ACWR["recreacional"])
-    acwr_val = fila["acwr"]
-    # ACWR como señal de riesgo contextual: la lógica de umbrales por nivel
-    # refleja la literatura de Gabbett (2016), pero el ACWR tiene limitaciones
-    # conocidas — la relación lesión-carga no es siempre monotónica (Windt &
-    # Gabbett 2018) y los promedios rodantes pueden infraestimar la carga
-    # reciente frente a modelos EWMA (Menaspà 2017). Ver variables.py > "acwr"
-    # descripcion para referencias completas. En el dataset sintético, el ACWR
-    # activa regla M1 (riesgo medio) pero no reglas A* (riesgo alto) por sí solo,
-    # lo que limita su peso en la etiqueta final.
-    if acwr_val > zonas["riesgo_alto"]:
-        score += info_ac["peso_scoring"]
-        no_claras += 1
-        acwr_alto = True
-    elif acwr_val > zonas["moderado_alto"] or acwr_val < zonas["moderado_bajo"]:
-        score += info_ac["peso_scoring"] * ZONA_GRIS_PUNTUACION_PARCIAL
-        grises += 1
-        acwr_alto = False
-    else:
-        claras += 1
-        acwr_alto = False
-
-    info_pss4 = VARIABLES_ORIGINALES["pss4"]
-    if fila["pss4"] >= info_pss4["umbral_riesgo_base"]["umbral"]:
-        score += info_pss4["peso_scoring"]
-        no_claras += 1
-    else:
-        claras += 1
-
     info_hooper = VARIABLES_ORIGINALES["hooper_index"]
     if fila["hooper_index"] >= info_hooper["umbral_riesgo_base"]["umbral"]:
         score += info_hooper["peso_scoring"]
-        no_claras += 1
-    else:
-        claras += 1
-
-    info_sueno = VARIABLES_ORIGINALES["horas_sueno"]
-    if fila["horas_sueno"] < info_sueno["umbral_riesgo_base"]["umbral_min"]:
-        score += info_sueno["peso_scoring"]
         no_claras += 1
     else:
         claras += 1
@@ -714,19 +661,12 @@ def _evaluar_fila(fila: pd.Series) -> dict:
             and estados_control.get("y_balance_cs_izq") == "fuera"):
         reglas_alto.append("A7")
 
-    # M1: ACWR alto
-    if acwr_alto:
-        reglas_medio.append("M1")
-
     # M2: historial alto (≥ 5) sin llegar a muy alto
     if historial_alto and not historial_muy_alto:
         reglas_medio.append("M2")
 
-    # M3: estrés alto (PSS-4 ≥ 9 u Hooper ≥ 22) + nivel de actividad activo/élite
-    estres_alto = (
-        fila["pss4"] >= VARIABLES_ORIGINALES["pss4"]["umbral_riesgo_base"]["umbral"]
-        or fila["hooper_index"] >= VARIABLES_ORIGINALES["hooper_index"]["umbral_riesgo_base"]["umbral"]
-    )
+    # M3: Hooper ≥ 22 (bienestar deteriorado) + nivel de actividad activo/élite
+    estres_alto = fila["hooper_index"] >= VARIABLES_ORIGINALES["hooper_index"]["umbral_riesgo_base"]["umbral"]
     if estres_alto and nivel in {"activo", "elite"}:
         reglas_medio.append("M3")
 

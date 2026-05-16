@@ -162,7 +162,7 @@ _CLASES_CSS_SEMA: dict[str, str] = {
 _KEYS_NRS       = ["dolor_percibido_nrs"]
 _KEYS_DEMOGRAFIA = ["edad", "genero", "peso_corporal"]
 _KEYS_ACTIVIDAD  = ["nivel_actividad"]
-_KEYS_CARGA      = ["historial_lesional", "acwr", "pss4", "hooper_index", "horas_sueno"]
+_KEYS_CARGA      = ["historial_lesional", "hooper_index"]
 
 
 # ---------------------------------------------------------------------------
@@ -255,14 +255,6 @@ def _nrs_badge_html(nrs: int) -> str:
         return f'<span class="badge badge-red">🔴 Dolor severo — NRS {nrs} (valoración urgente presencial)</span>'
 
 
-def _acwr_badge_html(acwr: float) -> str:
-    if 0.8 <= acwr <= 1.3:
-        return f'<span class="badge badge-green">ACWR {acwr:.2f} 🟢</span>'
-    elif (1.3 < acwr <= 1.5) or (0.6 <= acwr < 0.8):
-        return f'<span class="badge badge-yellow">ACWR {acwr:.2f} 🟡</span>'
-    return f'<span class="badge badge-red">ACWR {acwr:.2f} 🔴</span>'
-
-
 def _historial_badge_html(historial: int) -> str:
     if historial == 0:
         return '<span class="badge badge-green">Sin lesiones previas 🟢</span>'
@@ -328,12 +320,10 @@ def _renderizar_contexto() -> dict:
     # ── Resumen de badges ────────────────────────────────────────────────── #
     st.markdown("")
     nrs_v   = int(valores.get(nrs_key, 0)) if nrs_key in vars_ctx else 0
-    acwr_v  = float(valores.get("acwr", 1.0))
     hist_v  = int(valores.get("historial_lesional", 0))
     st.markdown(
         "<div style='margin-top:0.3rem;'>"
         + _nrs_badge_html(nrs_v)
-        + _acwr_badge_html(acwr_v)
         + _historial_badge_html(hist_v)
         + "</div>",
         unsafe_allow_html=True,

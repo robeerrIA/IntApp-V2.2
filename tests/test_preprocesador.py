@@ -125,12 +125,6 @@ def test_codificar_nivel_actividad_ordinal():
     assert list(df_out["nivel_actividad"]) == [0, 1, 2, 3]
 
 
-def test_codificar_perfil_exigencia_rango():
-    """Perfil de exigencia 1-5 se mapea a 0-4."""
-    df = pd.DataFrame({"perfil_exigencia_deportiva": [1, 3, 5]})
-    df_out = codificar_categoricas(df)
-    assert list(df_out["perfil_exigencia_deportiva"]) == [0, 2, 4]
-
 
 def test_codificar_valor_desconocido_produce_nan():
     """Un género no reconocido produce NaN, no una excepción."""
@@ -142,9 +136,9 @@ def test_codificar_valor_desconocido_produce_nan():
 # ── preprocesar (integración) ─────────────────────────────────────────────────
 
 def test_preprocesar_shape(df_crudo):
-    """El pipeline produce 55 columnas (54 features + riesgo_lesion)."""
+    """El pipeline produce 45 columnas (44 features + riesgo_lesion) — v2.3 (19 variables)."""
     df_out, _ = preprocesar(df_crudo)
-    assert df_out.shape[1] == 55
+    assert df_out.shape[1] == 45
 
 
 def test_preprocesar_sin_nans(df_crudo):

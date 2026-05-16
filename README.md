@@ -3,8 +3,8 @@
 Sistema de evaluación clínica basado en machine learning para la predicción del riesgo
 de lesión de miembro inferior en deportistas. Desarrollado como TFM de Fisioterapia.
 
-A partir de 22 variables clínicas originales (fuerza muscular, movilidad articular, control
-neuromuscular y contexto del deportista), expandidas a 34 columnas mediante medición bilateral,
+A partir de 19 variables clínicas originales (fuerza muscular, movilidad articular, control
+neuromuscular y contexto del deportista), expandidas a 31 columnas mediante medición bilateral,
 el sistema clasifica el riesgo en tres niveles (bajo / medio / alto) y explica qué variables
 han influido más en la predicción mediante importancia de variables del modelo (feature importance).
 
@@ -42,14 +42,14 @@ IntApp v2/
 │   └── 06_validacion_sinteticos.ipynb  Validación final
 │
 ├── src/                                # Módulos Python del proyecto
-│   ├── variables.py                    22 variables clínicas, umbrales y protocolo v2.2
+│   ├── variables.py                    19 variables clínicas, umbrales y protocolo v2.3
 │   ├── generador_datos.py              Generación de datos sintéticos
 │   ├── preprocesador.py                Pipeline de preprocesamiento y normalización
 │   ├── modelo.py                       Entrenamiento (RF, RL, GB) y serialización
 │   └── evaluador_riesgo.py             Evaluación individual + importancia de variables
 │
 ├── docs/                               # Documentación clínica
-│   ├── Protocolo_Scoring_Roberto_Franco.docx   Protocolo de scoring v2.2
+│   ├── Protocolo_Scoring_Roberto_Franco.docx   Protocolo de scoring v2.3
 │   └── Evidencia_Valores_Normativos.md         Evidencia bibliográfica de umbrales
 │
 ├── datos/

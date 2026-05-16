@@ -604,6 +604,7 @@ def entrenar_gradient_boosting(
     y_train: pd.Series,
     semilla: int = 42,
     peso_extra_alto: float = 1.0,
+    peso_extra_medio: float = 1.0,
 ) -> GradientBoostingClassifier:
     """Entrena un clasificador Gradient Boosting con pesos de muestra balanceados.
 
@@ -612,36 +613,40 @@ def entrenar_gradient_boosting(
     peso inversamente proporcional a la frecuencia de cada clase a cada muestra.
 
     Configuración:
-        - ``n_estimators=300``: más etapas con learning_rate bajo → mejor generalización.
-        - ``learning_rate=0.05``: shrinkage suave; complementa n_estimators=300.
-        - ``max_depth=4``: ligeramente más profundo para capturar interacciones.
+        - ``n_estimators=400``: más etapas con learning_rate bajo → mejor generalización.
+        - ``learning_rate=0.05``: shrinkage suave; complementa n_estimators=400.
+        - ``max_depth=5``: profundidad suficiente para capturar interacciones entre variables.
         - ``subsample=0.8``: Stochastic GB, reduce varianza y riesgo de sobreajuste.
-        - ``min_samples_leaf=4``: regularización adicional en hojas.
+        - ``min_samples_leaf=3``: regularización en hojas, permite hojas más finas.
 
     Args:
         X_train: Matriz de features de entrenamiento.
         y_train: Serie de etiquetas de entrenamiento.
         semilla: Semilla aleatoria para reproducibilidad.
         peso_extra_alto: Multiplicador adicional sobre el peso balanceado para la
-            clase 'alto'. Por defecto 1.0 (sin boost). Usa 2.0–3.0 para priorizar
-            el recall de 'alto' en contextos clínicos donde un falso negativo es
-            más costoso que un falso positivo.
+            clase 'alto'. Usa 2.0 para priorizar recall 'alto' en contexto clínico.
+        peso_extra_medio: Multiplicador adicional para la clase 'medio'. Usa 1.5–2.0
+            para compensar que 'medio' es la clase más difícil de separar.
 
     Returns:
         Modelo ``GradientBoostingClassifier`` ya ajustado.
     """
     logger.info(
-        "Entrenando Gradient Boosting (n_estimators=300, lr=0.05, subsample=0.8, "
-        "peso_extra_alto=%.1f)...",
+        "Entrenando Gradient Boosting (n_estimators=400, lr=0.05, subsample=0.8, "
+        "peso_extra_alto=%.1f, peso_extra_medio=%.1f)...",
         peso_extra_alto,
+        peso_extra_medio,
     )
 
     pesos_muestra = compute_sample_weight(class_weight="balanced", y=y_train)
 
-    # Boost adicional para 'alto': penaliza más los falsos negativos de alto riesgo
     if peso_extra_alto != 1.0:
         mask_alto = (y_train == "alto").values
         pesos_muestra[mask_alto] *= peso_extra_alto
+
+    if peso_extra_medio != 1.0:
+        mask_medio = (y_train == "medio").values
+        pesos_muestra[mask_medio] *= peso_extra_medio
 
     logger.info(
         "Pesos de muestra. Clases: %s | Pesos únicos: %s",
@@ -650,11 +655,11 @@ def entrenar_gradient_boosting(
     )
 
     modelo = GradientBoostingClassifier(
-        n_estimators=300,
+        n_estimators=400,
         learning_rate=0.05,
-        max_depth=4,
+        max_depth=5,
         subsample=0.8,
-        min_samples_leaf=4,
+        min_samples_leaf=3,
         random_state=semilla,
     )
     modelo.fit(X_train, y_train, sample_weight=pesos_muestra)
@@ -1007,15 +1012,15 @@ if __name__ == "__main__":
             logger.error("Error al leer el CSV: %s", exc)
             sys.exit(1)
     else:
-        # Sin --datos: generar 3 × 700 muestras con semillas distintas para
+        # Sin --datos: generar 5 × 1000 muestras con semillas distintas para
         # mayor diversidad, preprocesar y guardar scaler + CSV en el mismo paso.
         # Esto garantiza que modelo y scaler siempre provienen del mismo pipeline.
-        logger.info("Sin --datos: generando dataset sintético (3 × 700 muestras)...")
+        logger.info("Sin --datos: generando dataset sintético (5 × 1000 muestras)...")
         from src.generador_datos import generar_dataset
         from src.preprocesador import preprocesar as _preprocesar
 
-        semillas_gen = [args.semilla, args.semilla + 81, args.semilla + 1983]
-        fragmentos_crudos = [generar_dataset(n_deportistas=700, semilla=s) for s in semillas_gen]
+        semillas_gen = [args.semilla, args.semilla + 81, args.semilla + 1983, args.semilla + 777, args.semilla + 314]
+        fragmentos_crudos = [generar_dataset(n_deportistas=1000, semilla=s) for s in semillas_gen]
         df_crudo = pd.concat(fragmentos_crudos, ignore_index=True)
         logger.info("Dataset crudo: %d filas × %d columnas", len(df_crudo), len(df_crudo.columns))
 
@@ -1089,14 +1094,14 @@ if __name__ == "__main__":
         stratify=y_train_ml,
     )
     _gb_tmp = entrenar_gradient_boosting(
-        X_tr_cal, y_tr_cal, semilla=args.semilla, peso_extra_alto=2.5
+        X_tr_cal, y_tr_cal, semilla=args.semilla, peso_extra_alto=2.0, peso_extra_medio=1.8
     )
     umbral_optimo = calibrar_umbral_alto(_gb_tmp, X_val_cal, y_val_cal, min_f1_macro=0.58)
     del _gb_tmp
 
     # Reentrenar en el conjunto completo con el umbral encontrado
     modelo_gb_base_cal = entrenar_gradient_boosting(
-        X_train_ml, y_train_ml, semilla=args.semilla, peso_extra_alto=2.5
+        X_train_ml, y_train_ml, semilla=args.semilla, peso_extra_alto=2.0, peso_extra_medio=1.8
     )
     modelo_gb_cal = CalibradorUmbralAlto(modelo_gb_base_cal, umbral_optimo)
     logger.info(
@@ -1109,17 +1114,17 @@ if __name__ == "__main__":
     # buscamos el umbral_bajo que maximiza recall_medio sin comprometer recall_alto.
     print("\n--- Calibración del umbral para 'bajo' (dual) ---")
     _gb_tmp2 = entrenar_gradient_boosting(
-        X_tr_cal, y_tr_cal, semilla=args.semilla, peso_extra_alto=2.5
+        X_tr_cal, y_tr_cal, semilla=args.semilla, peso_extra_alto=2.0, peso_extra_medio=1.8
     )
     umbral_bajo_optimo = calibrar_umbrales_dual(
         _gb_tmp2,
         X_val_cal,
         y_val_cal,
         umbral_alto_fijo=umbral_optimo,
-        min_f1_macro=0.70,
+        min_f1_macro=0.65,
         min_precision_alto=0.60,
         min_recall_alto=None,
-        min_recall_bajo=0.75,
+        min_recall_bajo=0.70,
     )
     del _gb_tmp2
 

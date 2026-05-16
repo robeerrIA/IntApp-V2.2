@@ -16,7 +16,8 @@ ELIMINADOS del v1: ybalance_anterior/posteromedial/posterolateral (3 direcciones
     triple_hop, rotacion_externa_cadera (movilidad), flexoextension_rodilla,
     thomas_test_iliopsoas + thomas_test_recto_femoral (continuas separadas).
 AÑADIDOS en v2.2: y_balance_cs (score compuesto), rotadores_externos_cadera,
-    acwr, nivel_actividad, thomas_test (binaria bilateral).
+    nivel_actividad, thomas_test (binaria bilateral).
+ELIMINADOS en v2.3: acwr, pss4, horas_sueno.
 RATIO NUEVO: ratio_add_abd (aductores / glúteo medio, predictor inguinal).
 COLUMNA ETIQUETA: renombrada de "nivel_riesgo" a "riesgo_lesion".
 COLUMNAS AUXILIARES: score_total, confianza_score, confianza_categoria,
@@ -118,7 +119,6 @@ _COLUMNAS_EXCLUIDAS_SCALER: set[str] = {
     "thomas_test_izq",
     "historial_lesional",
     "dolor_percibido_nrs",
-    "pss4",
     "hooper_index",
     "nivel_actividad",
     "genero",
