@@ -158,6 +158,18 @@ _CLASES_CSS_SEMA: dict[str, str] = {
     "bajo": "sema-bajo", "medio": "sema-medio", "alto": "sema-alto",
 }
 
+# Badges de nivel de evidencia
+_BADGE_EVIDENCIA: dict[str, str] = {
+    "alto":     "badge-green",
+    "moderado": "badge-yellow",
+    "bajo":     "badge-red",
+}
+_LABEL_EVIDENCIA: dict[str, str] = {
+    "alto":     "Evidencia alta",
+    "moderado": "Evidencia moderada",
+    "bajo":     "Evidencia baja",
+}
+
 # Orden explícito de las variables contextuales
 _KEYS_NRS       = ["dolor_percibido_nrs"]
 _KEYS_DEMOGRAFIA = ["edad", "genero", "peso_corporal"]
@@ -255,6 +267,39 @@ def _nrs_badge_html(nrs: int) -> str:
         return f'<span class="badge badge-red">🔴 Dolor severo — NRS {nrs} (valoración urgente presencial)</span>'
 
 
+def _widget_y_balance(lado: str) -> float:
+    """Inputs A/PM/PL + longitud → calcula CS% automáticamente.
+
+    Devuelve el Composite Score como float (% longitud miembro).
+    """
+    key_sfx = "der" if lado == "derecha" else "izq"
+    caption  = "Lado derecho" if lado == "derecha" else "Lado izquierdo"
+
+    st.caption(caption)
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        a   = st.number_input("Anterior (cm)",       min_value=0.0, max_value=120.0,
+                               value=60.0, step=0.5, key=f"ybt_a_{key_sfx}")
+    with c2:
+        pm  = st.number_input("Posteromedial (cm)",  min_value=0.0, max_value=120.0,
+                               value=80.0, step=0.5, key=f"ybt_pm_{key_sfx}")
+    with c3:
+        pl  = st.number_input("Posterolateral (cm)", min_value=0.0, max_value=120.0,
+                               value=75.0, step=0.5, key=f"ybt_pl_{key_sfx}")
+    with c4:
+        long = st.number_input("Longitud miembro (cm)", min_value=60.0, max_value=120.0,
+                                value=90.0, step=0.5, key=f"ybt_long_{key_sfx}")
+
+    cs = round((a + pm + pl) / (3 * long) * 100, 1) if long > 0 else 0.0
+    color = "#dc3545" if cs < 89 else "#28a745"
+    st.markdown(
+        f"<div style='text-align:center; font-size:1.1rem; font-weight:600; "
+        f"color:{color}; margin-top:0.2rem;'>CS = {cs:.1f}%</div>",
+        unsafe_allow_html=True,
+    )
+    return cs
+
+
 def _historial_badge_html(historial: int) -> str:
     if historial == 0:
         return '<span class="badge badge-green">Sin lesiones previas 🟢</span>'
@@ -346,37 +391,56 @@ def _renderizar_bloque_en_tab(nombre_bloque: str) -> dict:
 
     for clave_orig, info_orig in vars_originales_bloque.items():
         protocolo = info_orig.get("protocolo")
+        evidencia = info_orig.get("nivel_evidencia", "")
+        badge_html = ""
+        if evidencia:
+            badge_cls   = _BADGE_EVIDENCIA.get(evidencia, "badge-yellow")
+            badge_label = _LABEL_EVIDENCIA.get(evidencia, evidencia)
+            badge_html  = f'<span class="badge {badge_cls}" style="font-size:0.72rem;">{badge_label}</span>'
         if info_orig.get("bilateral", False):
             col_titulo, col_proto = st.columns([8, 2])
             with col_titulo:
                 st.markdown(
-                    f"<div class='bloque-titulo'>{info_orig['nombre_display']}</div>",
+                    f"<div class='bloque-titulo'>{info_orig['nombre_display']}</div>"
+                    + (f"<div style='margin-bottom:0.4rem;'>{badge_html}</div>" if badge_html else ""),
                     unsafe_allow_html=True,
                 )
             if protocolo:
                 with col_proto:
                     with st.popover("ℹ️ Protocolo", use_container_width=True):
                         st.markdown(protocolo)
-            col_der, col_izq = st.columns(2)
             clave_der, clave_izq = f"{clave_orig}_der", f"{clave_orig}_izq"
-            with col_der:
-                st.caption("Lado derecho")
-                valores[clave_der] = _widget_variable(
-                    clave_der, variables_bloque.get(clave_der, info_orig),
-                    lado="derecha",
-                )
-            with col_izq:
-                st.caption("Lado izquierdo")
-                valores[clave_izq] = _widget_variable(
-                    clave_izq, variables_bloque.get(clave_izq, info_orig),
-                    lado="izquierda",
-                )
+            if clave_orig == "y_balance_cs":
+                col_der, col_izq = st.columns(2)
+                with col_der:
+                    valores[clave_der] = _widget_y_balance("derecha")
+                with col_izq:
+                    valores[clave_izq] = _widget_y_balance("izquierda")
+            else:
+                col_der, col_izq = st.columns(2)
+                with col_der:
+                    st.caption("Lado derecho")
+                    valores[clave_der] = _widget_variable(
+                        clave_der, variables_bloque.get(clave_der, info_orig),
+                        lado="derecha",
+                    )
+                with col_izq:
+                    st.caption("Lado izquierdo")
+                    valores[clave_izq] = _widget_variable(
+                        clave_izq, variables_bloque.get(clave_izq, info_orig),
+                        lado="izquierda",
+                    )
         else:
             clave = clave_orig
             info  = variables_bloque.get(clave, info_orig)
             col_widget, col_proto = st.columns([8, 2])
             with col_widget:
                 valores[clave] = _widget_variable(clave, info)
+                if badge_html:
+                    st.markdown(
+                        f"<div style='margin-top:0.15rem;margin-bottom:0.3rem;'>{badge_html}</div>",
+                        unsafe_allow_html=True,
+                    )
             if protocolo:
                 with col_proto:
                     with st.popover("ℹ️ Protocolo", use_container_width=True):
@@ -520,20 +584,34 @@ def _generar_informe_pdf(
 
     LOGO_PATH = Path(__file__).resolve().parent.parent / "docs" / "ue-logo.png"
 
-    # Fuentes TTF con soporte Unicode completo (español + caracteres especiales)
+    # Fuentes TTF con soporte Unicode completo (español + caracteres especiales).
+    # Se busca en macOS, Windows y Linux (Streamlit Cloud) en ese orden.
     _FONT_CANDIDATES = [
+        # macOS
         "/Library/Fonts/Arial Unicode.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
+        # Windows
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/Arial.ttf",
+        # Linux / Streamlit Cloud
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+    _FONT_BOLD_CANDIDATES = [
+        # macOS
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/Library/Fonts/Arial Unicode.ttf",
+        # Windows
+        "C:/Windows/Fonts/arialbd.ttf",
+        "C:/Windows/Fonts/ArialBD.ttf",
+        # Linux / Streamlit Cloud
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
     ]
     _FONT_REGULAR = next((p for p in _FONT_CANDIDATES if Path(p).exists()), None)
-    _FONT_BOLD    = next(
-        (p for p in [
-            "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-            "/Library/Fonts/Arial Unicode.ttf",
-        ] if Path(p).exists()),
-        _FONT_REGULAR,
-    )
+    _FONT_BOLD    = next((p for p in _FONT_BOLD_CANDIDATES if Path(p).exists()), _FONT_REGULAR)
 
     COLOR_NIVEL = {
         "bajo":  (6,  78, 59),
@@ -660,6 +738,36 @@ def _generar_informe_pdf(
     )
 
     return pdf.output()
+
+
+def _mostrar_shap_explicacion(resultado_shap: dict) -> None:
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
+    fig = resultado_shap.get("figura_waterfall")
+    top_vars = resultado_shap.get("top_variables", [])
+
+    st.caption(
+        "Barras rojas: la variable aumenta el riesgo predicho. "
+        "Barras azules: la variable lo reduce. "
+        "Específico para esta evaluación individual, no para el modelo en general."
+    )
+
+    if fig is not None:
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
+    elif top_vars:
+        filas = [
+            {
+                "Variable": _nombre_display_variable(n),
+                "Impacto SHAP": round(v, 4),
+                "Dirección": "▲ Aumenta riesgo" if v > 0 else "▼ Reduce riesgo",
+            }
+            for n, v in top_vars
+        ]
+        st.dataframe(pd.DataFrame(filas), hide_index=True, use_container_width=True)
+    else:
+        st.info("Explicación SHAP no disponible para este modelo.")
 
 
 def _mostrar_tabla_referencia(valores_deportista: dict) -> None:
@@ -828,12 +936,14 @@ def main() -> None:
                 preparar_deportista,
                 predecir_riesgo,
                 importancia_variables_modelo,
+                explicar_prediccion,
             )
 
             modelo, scaler = pipeline
             df_procesado   = preparar_deportista(valores_totales, scaler)
             resultado_pred = predecir_riesgo(modelo, df_procesado)
             importancias   = importancia_variables_modelo(modelo, df_procesado, n_top=10)
+            resultado_shap = explicar_prediccion(modelo, df_procesado, max_variables=10)
 
             prediccion     = resultado_pred["prediccion"]
             probabilidades = resultado_pred["probabilidades"]
@@ -859,7 +969,7 @@ def main() -> None:
 
     st.divider()
 
-    # Importancia de variables + banderas fuera de rango
+    # Importancia global del modelo + variables fuera de rango
     col_imp, col_flags = st.columns([1, 1])
     with col_imp:
         _mostrar_importancia_variables(importancias)
@@ -877,6 +987,10 @@ def main() -> None:
         mime="application/pdf",
         help="",
     )
+
+    # Explicación SHAP individual (colapsable, tamaño reducido)
+    with st.expander("🔍 Explicación SHAP — Factores determinantes para este deportista"):
+        _mostrar_shap_explicacion(resultado_shap)
 
     # Tabla de referencia (colapsable)
     _mostrar_tabla_referencia(valores_totales)
