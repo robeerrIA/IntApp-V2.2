@@ -37,89 +37,89 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-/* ── Sidebar clínica ── */
-[data-testid="stSidebar"] {
-    background: #0a0f1a !important;
-    border-right: 1px solid #1e3a5f;
-}
-[data-testid="stSidebar"] * { color: #94c5d8 !important; }
-[data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] h4 { color: #38bdf8 !important; font-weight: 600 !important; }
-[data-testid="stSidebar"] hr { border-color: #1e3a5f; }
-[data-testid="stSidebar"] code {
-    background: #0d1f33 !important; color: #38bdf8 !important;
-}
+/* ── Base ── */
+.block-container { padding-top: 2rem; padding-bottom: 3rem; }
 
-/* ── Layout ── */
-.block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #f0f4f8 !important;
+    border-right: 1px solid #d1d9e0 !important;
+}
+[data-testid="stSidebar"] * { color: #0b0c0c !important; }
+[data-testid="stSidebar"] h3 { color: #0b0c0c !important; font-size: 1rem !important; font-weight: 700 !important; }
+[data-testid="stSidebar"] h4 { color: #374151 !important; font-size: 0.875rem !important; font-weight: 600 !important; }
+[data-testid="stSidebar"] hr { border-color: #d1d9e0; }
 
 /* ── Cabecera de sección ── */
 .section-header {
-    font-size: 1.05rem; font-weight: 700; color: #e2e8f0;
-    border-left: 4px solid #38bdf8; padding-left: 0.65rem;
-    margin-bottom: 0.9rem; margin-top: 0.2rem;
-    letter-spacing: 0.01em;
+    font-size: 1rem; font-weight: 700; color: #0b0c0c;
+    border-bottom: 2px solid #1d3461; padding-bottom: 0.5rem;
+    margin-bottom: 1.25rem; margin-top: 0.5rem;
 }
 
-/* ── Badges de contexto ── */
+/* ── Badges ── */
 .badge {
-    display: inline-block; border-radius: 6px;
-    padding: 0.2rem 0.75rem; font-size: 0.8rem; font-weight: 600;
-    margin-right: 0.4rem; margin-bottom: 0.35rem;
-    border: 1px solid transparent;
+    display: inline-block; border-radius: 3px;
+    padding: 0.15rem 0.55rem; font-size: 0.75rem; font-weight: 600;
+    margin-right: 0.3rem; margin-bottom: 0.3rem;
 }
-.badge-green  { background: #0d2b1e; color: #34d399; border-color: #065f46; }
-.badge-yellow { background: #2b1e05; color: #fbbf24; border-color: #78350f; }
-.badge-red    { background: #2b0d0d; color: #f87171; border-color: #7f1d1d; }
+.badge-green  { background: #f0fdf4; color: #065f46; border: 1px solid #bbf7d0; }
+.badge-yellow { background: #fffbeb; color: #78350f; border: 1px solid #fde68a; }
+.badge-red    { background: #fff5f5; color: #991b1b; border: 1px solid #fecaca; }
 
 /* ── Semáforo ── */
 .sema-box {
-    border-radius: 10px; padding: 1.5rem 2rem; text-align: center;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.08);
+    padding: 1.25rem 1.5rem; text-align: left;
+    border-left: 5px solid; background: #f9fafb;
 }
 .sema-label {
-    font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.75);
-    letter-spacing: 0.12em; text-transform: uppercase;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #6b7280; margin-bottom: 0.25rem;
 }
-.sema-nivel {
-    font-size: 1.8rem; font-weight: 800; color: #fff;
-    letter-spacing: 0.04em; margin-top: 0.4rem;
-}
-.sema-bajo  { background: linear-gradient(135deg, #064e3b, #065f46); }
-.sema-medio { background: linear-gradient(135deg, #451a03, #78350f); }
-.sema-alto  { background: linear-gradient(135deg, #450a0a, #7f1d1d); }
+.sema-nivel { font-size: 1.3rem; font-weight: 700; margin-top: 0.2rem; }
+.sema-bajo  { border-color: #15803d; background: #f0fdf4; }
+.sema-bajo .sema-nivel  { color: #14532d; }
+.sema-medio { border-color: #b45309; background: #fffbeb; }
+.sema-medio .sema-nivel { color: #78350f; }
+.sema-alto  { border-color: #b91c1c; background: #fff5f5; }
+.sema-alto .sema-nivel  { color: #7f1d1d; }
 
 /* ── Tarjetas de probabilidad ── */
 .prob-card {
-    border-radius: 8px; padding: 0.9rem 1rem; text-align: center;
-    background: #161d2a;
+    border: 1px solid #e5e7eb; padding: 1rem;
+    text-align: center; background: #ffffff;
 }
 .prob-label {
-    font-size: 0.78rem; font-weight: 600; color: #64748b;
-    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.25rem;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #6b7280; margin-bottom: 0.375rem;
 }
-.prob-value { font-size: 1.7rem; font-weight: 800; }
+.prob-value { font-size: 1.5rem; font-weight: 700; }
 
 /* ── Banderas fuera de rango ── */
 .flag-item {
-    background: #1a0a0a; border-left: 3px solid #ef4444;
-    border-radius: 0 6px 6px 0; padding: 0.4rem 0.8rem;
-    margin-bottom: 0.35rem; font-size: 0.86rem; color: #fca5a5;
+    background: #fff5f5; border-left: 4px solid #b91c1c;
+    padding: 0.4rem 0.75rem; margin-bottom: 0.25rem;
+    font-size: 0.875rem; color: #7f1d1d;
 }
 
 /* ── Títulos bilaterales (dentro de tabs) ── */
 .bloque-titulo {
-    font-size: 0.93rem; font-weight: 700; color: #e2e8f0;
-    border-left: 3px solid #38bdf8; padding-left: 0.5rem;
-    margin-bottom: 0.5rem; margin-top: 0.5rem;
+    font-size: 0.875rem; font-weight: 700; color: #111827;
+    border-bottom: 1px solid #e5e7eb; padding-bottom: 0.35rem;
+    margin-bottom: 0.5rem; margin-top: 0.75rem;
 }
 
 /* ── Aviso modelo no encontrado ── */
 .aviso-modelo {
-    background: #1a150a; border: 1px solid #78350f;
-    border-radius: 8px; padding: 1.2rem; color: #fbbf24;
+    background: #fffbeb; border-left: 4px solid #d97706;
+    padding: 1rem 1.25rem; color: #78350f;
 }
+
+/* ── Tabla de referencia ── */
+table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+thead tr { background: #f0f4f8; }
+th { padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #d1d9e0; }
+td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e5e7eb; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,7 +149,7 @@ _ETIQUETAS_VALGO: dict[int, str] = {
 }
 _ETIQUETAS_GENERO: dict[str, str] = {"masculino": "Masculino", "femenino": "Femenino"}
 
-_COLORES_PROB: dict[str, str] = {"bajo": "#28a745", "medio": "#e6a817", "alto": "#dc3545"}
+_COLORES_PROB: dict[str, str] = {"bajo": "#15803d", "medio": "#b45309", "alto": "#b91c1c"}
 _NOMBRES_CLASE_ES: dict[str, str] = {"bajo": "Bajo", "medio": "Medio", "alto": "Alto"}
 _NOMBRES_NIVEL: dict[str, str] = {
     "bajo": "RIESGO BAJO", "medio": "RIESGO MEDIO", "alto": "RIESGO ALTO",
@@ -256,15 +256,15 @@ def _widget_variable(key: str, info: dict, lado: str | None = None):
 
 def _nrs_badge_html(nrs: int) -> str:
     if nrs == 0:
-        return f'<span class="badge badge-green">🟢 Sin dolor — NRS {nrs}</span>'
+        return f'<span class="badge badge-green">Sin dolor — NRS {nrs}</span>'
     elif nrs <= 3:
-        return f'<span class="badge badge-green">🟢 Dolor leve — NRS {nrs}</span>'
+        return f'<span class="badge badge-green">Dolor leve — NRS {nrs}</span>'
     elif nrs <= 5:
-        return f'<span class="badge badge-yellow">🟡 Dolor moderado — NRS {nrs} (se evaluará con el modelo)</span>'
+        return f'<span class="badge badge-yellow">Dolor moderado — NRS {nrs}</span>'
     elif nrs <= 7:
-        return f'<span class="badge badge-red">🔴 Dolor intenso — NRS {nrs} (caso no concluyente)</span>'
+        return f'<span class="badge badge-red">Dolor intenso — NRS {nrs} (caso no concluyente)</span>'
     else:
-        return f'<span class="badge badge-red">🔴 Dolor severo — NRS {nrs} (valoración urgente presencial)</span>'
+        return f'<span class="badge badge-red">Dolor severo — NRS {nrs} (valoración urgente presencial)</span>'
 
 
 def _widget_y_balance(lado: str) -> float:
@@ -302,10 +302,10 @@ def _widget_y_balance(lado: str) -> float:
 
 def _historial_badge_html(historial: int) -> str:
     if historial == 0:
-        return '<span class="badge badge-green">Sin lesiones previas 🟢</span>'
+        return '<span class="badge badge-green">Sin lesiones previas</span>'
     elif historial == 1:
-        return '<span class="badge badge-yellow">1 lesión previa 🟡</span>'
-    return f'<span class="badge badge-red">{historial}+ lesiones previas 🔴</span>'
+        return '<span class="badge badge-yellow">1 lesión previa</span>'
+    return f'<span class="badge badge-red">{historial}+ lesiones previas</span>'
 
 
 def _renderizar_contexto() -> dict:
@@ -313,7 +313,7 @@ def _renderizar_contexto() -> dict:
     vars_ctx = {k: v for k, v in VARIABLES.items() if v.get("bloque") == "contexto"}
     valores: dict = {}
 
-    st.markdown('<div class="section-header">📋 Perfil del deportista</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Perfil del deportista</div>', unsafe_allow_html=True)
 
     # ── NRS — destacado en la parte superior ────────────────────────────── #
     nrs_key = _KEYS_NRS[0]
@@ -321,7 +321,7 @@ def _renderizar_contexto() -> dict:
         info = vars_ctx[nrs_key]
         rango = info.get("rango_sintetico") or info.get("rango_normal", (0, 10))
         nrs_val = st.slider(
-            "🔴  Dolor percibido — Escala NRS  (0 = sin dolor · 10 = máximo dolor)",
+            "Dolor percibido — Escala NRS  (0 = sin dolor · 10 = máximo dolor)",
             min_value=int(rango[0]), max_value=int(rango[1]),
             value=0, step=1, key=f"slider_{nrs_key}",
         )
@@ -452,11 +452,11 @@ def _renderizar_bloque_en_tab(nombre_bloque: str) -> dict:
 def _renderizar_evaluacion_fisica() -> dict:
     """Renderiza Section 2: evaluación física con tres pestañas."""
     st.markdown(
-        '<div class="section-header">🔬 Evaluación física</div>',
+        '<div class="section-header">Evaluación física</div>',
         unsafe_allow_html=True,
     )
     tab_fuerza, tab_movilidad, tab_control = st.tabs(
-        ["💪  Fuerza muscular", "🔄  Movilidad articular", "⚖️  Control neuromuscular"]
+        ["Fuerza muscular", "Movilidad articular", "Control neuromuscular"]
     )
     valores: dict = {}
     with tab_fuerza:
@@ -567,7 +567,7 @@ def _mostrar_banderas_fuera_rango(valores_deportista: dict) -> list[str]:
     if flags:
         st.markdown("**Variables fuera de rango de referencia**")
         for f in flags:
-            st.markdown(f'<div class="flag-item">⚠️ {f}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="flag-item">{f}</div>', unsafe_allow_html=True)
     else:
         st.success("Todos los valores dentro de los rangos de referencia.", icon="✅")
 
@@ -771,7 +771,7 @@ def _mostrar_shap_explicacion(resultado_shap: dict) -> None:
 
 
 def _mostrar_tabla_referencia(valores_deportista: dict) -> None:
-    with st.expander("📊 Tabla de comparación con rangos de referencia clínicos", expanded=False):
+    with st.expander("Comparación con rangos de referencia clínicos", expanded=False):
         filas = []
         for clave, valor in valores_deportista.items():
             if clave not in VARIABLES:
@@ -828,59 +828,57 @@ def main() -> None:
 
     # ── Sidebar ─────────────────────────────────────────────────────────── #
     with st.sidebar:
-        st.markdown("### 🏃 IntApp v2")
+        st.image("docs/ue-logo.png", width="stretch")
+        st.markdown("### IntApp v2")
         st.markdown("#### Evaluación de Riesgo de Lesión")
         st.divider()
         st.markdown("**Instrucciones**")
         st.markdown(
-            "1. Completa el **perfil del deportista** (arriba).\n"
-            "2. Registra los datos en las tres pestañas de **evaluación física**.\n"
-            "3. Pulsa **Calcular Riesgo** y revisa el resultado.\n"
-            "4. Descarga el **informe** si necesitas documentarlo."
+            "1. Completa el perfil del deportista.\n"
+            "2. Registra los datos en las tres pestañas de evaluación física.\n"
+            "3. Pulsa **Calcular riesgo** y revisa el resultado.\n"
+            "4. Descarga el informe si necesitas documentarlo."
         )
         st.divider()
-        st.markdown("**Semáforo de riesgo**")
+        st.markdown("**Niveles de riesgo**")
         st.markdown(
-            "🟢 **Bajo** — Continuar programa habitual.\n\n"
-            "🟡 **Medio** — Revisar factores de riesgo identificados.\n\n"
-            "🔴 **Alto** — Intervención prioritaria recomendada."
+            "**Bajo** — Continuar programa habitual.\n\n"
+            "**Medio** — Revisar factores de riesgo identificados.\n\n"
+            "**Alto** — Intervención prioritaria recomendada."
         )
         st.divider()
         st.markdown("**Nota clínica**")
         st.caption(
-            "NRS > 5: caso no concluyente. "
+            "NRS > 5: evaluación no concluyente. "
             "Se recomienda valoración presencial antes de continuar."
         )
         st.divider()
-        st.caption("v2.2 · IntApp · Universidad Europea")
+        st.caption("v2.3 · IntApp · Universidad Europea")
 
     # ── Cabecera ─────────────────────────────────────────────────────────── #
     st.markdown("# IntApp — Evaluación de Riesgo de Lesión")
     st.markdown(
         "Herramienta de apoyo a la decisión clínica para la valoración individualizada "
         "del riesgo de lesión en miembro inferior. "
-        "Completa el perfil y la evaluación física, luego pulsa **Calcular Riesgo**."
+        "Completa el perfil y la evaluación física, luego pulsa **Calcular riesgo**."
     )
-    st.divider()
+    st.markdown("")
 
-    # ── Sección 1: Variables contextuales (al inicio del formulario) ─────── #
-    with st.container(border=True):
-        valores_ctx = _renderizar_contexto()
+    # ── Sección 1: Perfil del deportista ─────────────────────────────────── #
+    valores_ctx = _renderizar_contexto()
 
     st.markdown("")
 
     # ── Sección 2: Evaluación física con tabs ────────────────────────────── #
-    with st.container(border=True):
-        valores_fisica = _renderizar_evaluacion_fisica()
+    valores_fisica = _renderizar_evaluacion_fisica()
 
     valores_totales: dict = {**valores_ctx, **valores_fisica}
     st.markdown("")
-    st.divider()
 
     # ── Botón de cálculo ─────────────────────────────────────────────────── #
     col_btn, col_info = st.columns([1, 3])
     with col_btn:
-        calcular = st.button("⚡ Calcular Riesgo", type="primary", use_container_width=True)
+        calcular = st.button("Calcular riesgo", type="primary", use_container_width=True)
     with col_info:
         st.caption(
             "El cálculo puede tardar unos segundos la primera vez "
@@ -909,20 +907,15 @@ def main() -> None:
     nrs = int(valores_totales.get("dolor_percibido_nrs", 0))
     if nrs > 5:
         st.markdown("## Resultado")
-        st.divider()
         st.markdown(
-            f'<div style="background:#f8d7da;border:1px solid #f5c6cb;'
-            f'border-radius:10px;padding:1.5rem 2rem;">'
-            f'<h3 style="color:#721c24;margin-top:0;">⚠️ Dolor agudo activo — Caso no concluyente</h3>'
-            f'<p style="color:#721c24;margin-bottom:0.5rem;">'
-            f'Dolor percibido (NRS) <strong>{nrs}/10</strong> — superior al umbral clínico de 5.</p>'
-            f'<p style="color:#721c24;margin-bottom:0;">'
-            f'<strong>Valoración clínica presencial urgente</strong> antes de continuar '
-            f'con el programa de prevención.</p>'
+            f'<div class="aviso-modelo">'
+            f'<strong>Evaluación no concluyente — Dolor agudo activo</strong><br><br>'
+            f'Dolor percibido (NRS) <strong>{nrs}/10</strong>, superior al umbral clínico de 5. '
+            f'Se recomienda valoración clínica presencial antes de continuar con el programa de prevención.'
             f'</div>',
             unsafe_allow_html=True,
         )
-        st.divider()
+        st.markdown("")
         st.caption(
             "Este resultado es una ayuda a la decisión clínica y no sustituye "
             "el criterio del profesional."
@@ -958,44 +951,38 @@ def main() -> None:
 
     # ── Resultados ───────────────────────────────────────────────────────── #
     st.markdown("## Resultado de la evaluación")
-    st.divider()
 
-    # Semáforo + probabilidades en paralelo
     col_sema, col_probs = st.columns([1, 2])
     with col_sema:
         _mostrar_semaforo(prediccion)
     with col_probs:
         _mostrar_probabilidades(probabilidades)
 
-    st.divider()
+    st.markdown("")
 
-    # Importancia global del modelo + variables fuera de rango
     col_imp, col_flags = st.columns([1, 1])
     with col_imp:
         _mostrar_importancia_variables(importancias)
     with col_flags:
         flags = _mostrar_banderas_fuera_rango(valores_totales)
 
-    st.divider()
+    st.markdown("")
 
-    # Descarga del informe PDF
     informe_pdf = _generar_informe_pdf(valores_totales, prediccion, probabilidades, flags)
     st.download_button(
-        label="📄 Descargar informe (.pdf)",
+        label="Descargar informe (PDF)",
         data=bytes(informe_pdf),
         file_name=f"intapp_informe_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
         mime="application/pdf",
         help="",
     )
 
-    # Explicación SHAP individual (colapsable, tamaño reducido)
-    with st.expander("🔍 Explicación SHAP — Factores determinantes para este deportista"):
+    with st.expander("Factores determinantes para este deportista (SHAP)"):
         _mostrar_shap_explicacion(resultado_shap)
 
-    # Tabla de referencia (colapsable)
     _mostrar_tabla_referencia(valores_totales)
 
-    st.divider()
+    st.markdown("")
     st.caption(
         "Este resultado es una ayuda a la decisión clínica y no sustituye "
         "el criterio profesional del fisioterapeuta o médico responsable."
