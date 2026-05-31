@@ -1,19 +1,19 @@
 """
 generador_datos.py — Generador de datos sintéticos para IntApp.
 
-Versión 2.2 alineada con el Protocolo de Scoring Clínico v2.2.
+Versión 2.3 alineada con el Protocolo de Scoring Clínico v2.3.
 
-Resumen de la versión 2.2
+Resumen de la versión 2.3
 -------------------------
-1. Bloques actualizados al nuevo set de 25 variables originales:
-   - Fuerza:    cuádriceps, isquios, glúteos medio/mayor, rotadores externos
-                de cadera (NUEVA), flexores y aductores cadera, tríceps sural.
-   - Movilidad: dorsiflexión tobillo, extensibilidad isquiotibial, Thomas test
-                (FUSIONADA, binaria), rotación interna cadera, extensión 1er dedo.
-   - Control:   Y-Balance Composite Score (NUEVA, sustituye 3 direcciones YBT),
-                single-leg squat valgo, single-leg hop.
-   - Contexto:  edad, género, peso, nivel de actividad (NUEVA), perfil exigencia,
-                historial lesional, NRS, ACWR (NUEVA), índice estrés.
+1. Bloques actualizados al set de 19 variables originales:
+   - Fuerza (6):    cuádriceps, isquiotibiales, glúteo medio, rotadores externos
+                    de cadera, aductores cadera, tríceps sural.
+   - Movilidad (3): dorsiflexión tobillo (WBLT), Thomas test (binaria fusionada),
+                    rotación interna cadera.
+   - Control (3):   Y-Balance Composite Score, single-leg squat valgo,
+                    single-leg hop.
+   - Contexto (7):  edad, género, peso corporal, nivel de actividad,
+                    historial lesional, NRS, Hooper Index.
 
 2. La generación de fuerza tiene en cuenta peso corporal y género: hombres y
    personas más pesadas tienen valores brutos más altos en N (clínicamente

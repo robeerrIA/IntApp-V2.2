@@ -78,25 +78,25 @@ def test_asimetria_simetria_perfecta():
     """Con lados iguales, la asimetría debe ser 0."""
     df_mini = pd.DataFrame({"cuadriceps_der": [200.0], "cuadriceps_izq": [200.0]})
     df_out = calcular_asimetrias(df_mini)
-    if "asimetria_cuadriceps" in df_out.columns:
-        assert df_out["asimetria_cuadriceps"].iloc[0] == pytest.approx(0.0)
+    assert "asimetria_cuadriceps" in df_out.columns
+    assert df_out["asimetria_cuadriceps"].iloc[0] == pytest.approx(0.0)
 
 
 def test_asimetria_valor_conocido():
     """|300 - 200| / max(300, 200) × 100 = 33.33 %."""
     df_mini = pd.DataFrame({"cuadriceps_der": [300.0], "cuadriceps_izq": [200.0]})
     df_out = calcular_asimetrias(df_mini)
-    if "asimetria_cuadriceps" in df_out.columns:
-        assert df_out["asimetria_cuadriceps"].iloc[0] == pytest.approx(100 / 3, rel=1e-3)
+    assert "asimetria_cuadriceps" in df_out.columns
+    assert df_out["asimetria_cuadriceps"].iloc[0] == pytest.approx(100 / 3, rel=1e-3)
 
 
 def test_asimetria_bilateral_cero_no_nan():
     """Cuando ambos lados son 0 (0/0), la asimetría debe ser 0.0, nunca NaN."""
     df_mini = pd.DataFrame({"thomas_test_der": [0], "thomas_test_izq": [0]})
     df_out = calcular_asimetrias(df_mini)
-    if "asimetria_thomas_test" in df_out.columns:
-        assert not df_out["asimetria_thomas_test"].isna().any()
-        assert df_out["asimetria_thomas_test"].iloc[0] == pytest.approx(0.0)
+    assert "asimetria_thomas_test" in df_out.columns
+    assert not df_out["asimetria_thomas_test"].isna().any()
+    assert df_out["asimetria_thomas_test"].iloc[0] == pytest.approx(0.0)
 
 
 def test_asimetria_no_modifica_entrada(df_crudo):

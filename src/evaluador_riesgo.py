@@ -90,10 +90,10 @@ def cargar_pipeline(
     padre de ``src/``).
 
     Args:
-        ruta_modelo: Ruta al archivo ``.joblib`` del modelo entrenado.
-            Por defecto ``modelos/modelo_rf.joblib``.
-        ruta_scaler: Ruta al archivo ``.joblib`` del StandardScaler ajustado
-            durante el entrenamiento. Por defecto ``modelos/scaler.joblib``.
+        ruta_modelo: Ruta al archivo ``.pkl`` del modelo entrenado.
+            Por defecto ``modelos/mejor_modelo.pkl``.
+        ruta_scaler: Ruta al archivo ``.pkl`` del StandardScaler ajustado
+            durante el entrenamiento. Por defecto ``modelos/scaler.pkl``.
 
     Returns:
         Tupla ``(modelo, scaler)`` listos para inferencia.
@@ -358,34 +358,50 @@ def explicar_prediccion(
     shap_values_instancia: np.ndarray
     explainer_usado: str
 
-    # CalibradorUmbralAlto no es un árbol reconocible por TreeExplainer → ir
-    # directamente a KernelExplainer. Para modelos de árbol puro (RF, GB sin
-    # wrapper) se podría usar TreeExplainer, pero multiclass GBT tampoco es
-    # compatible con él en SHAP 0.51.
-    # El fondo de ceros equivale a la media del espacio escalado (StandardScaler
-    # centra en 0), lo que es un punto de referencia razonable para 1 instancia.
+    # Acceder al modelo base (GBT puro) para TreeExplainer, que es compatible
+    # con scikit-learn GradientBoostingClassifier multiclase y muy rápido.
+    # CalibradorUmbralAlto expone modelo_base; si no existe, se usa el modelo tal cual.
+    modelo_base = getattr(modelo, "modelo_base", modelo)
+    base_value: float = 0.0
+
     try:
-        fondo = np.zeros((1, df_procesado.shape[1]))
-        explainer = shap.KernelExplainer(
-            modelo.predict_proba,
-            fondo,
-            feature_names=list(df_procesado.columns),
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            raw = explainer.shap_values(df_procesado, nsamples=100)
+        explainer = shap.TreeExplainer(modelo_base)
+        raw = explainer.shap_values(df_procesado)
         shap_values_instancia, indice_clase = _extraer_shap_clase_predicha(
             raw, modelo, df_procesado
         )
-        explainer_usado = "KernelExplainer"
-        logger.info("SHAP KernelExplainer aplicado correctamente.")
-    except Exception as exc_kernel:
-        logger.error("No se pudo generar explicación SHAP: %s", exc_kernel)
-        return {
-            "shap_values": None,
-            "top_variables": [],
-            "figura_waterfall": None,
-        }
+        ev = explainer.expected_value
+        if isinstance(ev, (list, np.ndarray)):
+            base_value = float(np.array(ev)[indice_clase])
+        else:
+            base_value = float(ev)
+        logger.info("SHAP TreeExplainer aplicado correctamente.")
+    except Exception as exc_tree:
+        logger.warning(
+            "TreeExplainer no disponible (%s). Usando KernelExplainer (más lento).",
+            exc_tree,
+        )
+        try:
+            fondo = np.zeros((1, df_procesado.shape[1]))
+            explainer = shap.KernelExplainer(
+                modelo.predict_proba,
+                fondo,
+                feature_names=list(df_procesado.columns),
+            )
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                raw = explainer.shap_values(df_procesado, nsamples=100)
+            shap_values_instancia, indice_clase = _extraer_shap_clase_predicha(
+                raw, modelo, df_procesado
+            )
+            logger.info("SHAP KernelExplainer aplicado correctamente.")
+        except Exception as exc_kernel:
+            logger.error("No se pudo generar explicación SHAP: %s", exc_kernel)
+            return {
+                "shap_values": None,
+                "top_variables": [],
+                "figura_waterfall": None,
+            }
 
     # --- Top variables por importancia absoluta ---
     nombres_features = list(df_procesado.columns)
@@ -393,9 +409,8 @@ def explicar_prediccion(
     top_variables = sorted(pares, key=lambda x: abs(x[1]), reverse=True)[:max_variables]
 
     logger.info(
-        "Top %d variables por impacto SHAP (%s): %s",
+        "Top %d variables por impacto SHAP: %s",
         max_variables,
-        explainer_usado,
         [(nombre, round(val, 4)) for nombre, val in top_variables],
     )
 
@@ -406,6 +421,7 @@ def explicar_prediccion(
         valores_features=df_procesado.iloc[0].values,
         max_display=max_variables,
         clase_predicha=str(modelo.classes_[indice_clase]).lower(),
+        base_value=base_value,
     )
 
     return {
@@ -536,7 +552,7 @@ def _resolver_ruta(ruta: str) -> Path:
     """Convierte una ruta relativa en absoluta usando la raíz del proyecto.
 
     Args:
-        ruta: Ruta relativa (ej. ``"modelos/modelo_rf.joblib"``) o absoluta.
+        ruta: Ruta relativa (ej. ``"modelos/mejor_modelo.pkl"``) o absoluta.
 
     Returns:
         Objeto ``Path`` absoluto.
@@ -609,6 +625,7 @@ def _generar_figura_waterfall(
     valores_features: np.ndarray,
     max_display: int,
     clase_predicha: str,
+    base_value: float = 0.0,
 ) -> Optional[matplotlib.figure.Figure]:
     """Genera un gráfico de cascada (waterfall) con los valores SHAP.
 
@@ -627,26 +644,21 @@ def _generar_figura_waterfall(
         Figura de matplotlib con el gráfico, o ``None`` si la generación falla.
     """
     try:
-        # Construir objeto Explanation de shap para usar su API de plots
+        plt.close("all")
         explicacion = shap.Explanation(
             values=shap_values,
-            base_values=0.0,  # valor base aproximado (sin expected_value exacto)
+            base_values=base_value,
             data=valores_features,
             feature_names=nombres_features,
         )
-
-        fig, ax = plt.subplots(figsize=(10, max(4, max_display * 0.5)))
-        shap.plots.waterfall(
-            explicacion,
-            max_display=max_display,
-            show=False,
-        )
+        shap.plots.waterfall(explicacion, max_display=max_display, show=False)
         fig = plt.gcf()
+        fig.set_size_inches(7, max(3, max_display * 0.38))
         fig.suptitle(
-            f"Explicación SHAP — Clase predicha: {clase_predicha.upper()}",
-            fontsize=12,
+            f"SHAP — clase predicha: {clase_predicha.upper()}",
+            fontsize=10,
             fontweight="bold",
-            y=1.01,
+            y=1.02,
         )
         plt.tight_layout()
         logger.info("Figura waterfall SHAP generada correctamente.")

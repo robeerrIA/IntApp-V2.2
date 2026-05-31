@@ -644,7 +644,7 @@ def _generar_informe_pdf(
     pdf.set_font(_FONT, "B", 16)
     pdf.set_text_color(15, 23, 42)
     pdf.set_xy(42, 14)
-    pdf.cell(0, 8, "IntApp v2 — Informe de Evaluacion de Riesgo")
+    pdf.cell(0, 8, "IntApp v2 - Informe de Evaluación de Riesgo")
     pdf.set_font(_FONT, "", 9)
     pdf.set_text_color(100, 116, 139)
     pdf.set_xy(42, 23)
@@ -731,9 +731,9 @@ def _generar_informe_pdf(
     pdf.set_text_color(148, 163, 184)
     pdf.multi_cell(
         0, 4,
-        "Herramienta de apoyo a la decision clinica - IntApp v2. "
+        "Herramienta de apoyo a la decisión clínica - IntApp v2. "
         "No sustituye el criterio del profesional sanitario. "
-        "Uso exclusivo para evaluacion clinica en el contexto del TFM, Universidad Europea.",
+        "Uso exclusivo para evaluación clínica en el contexto del TFM, Universidad Europea.",
         align="C",
     )
 
