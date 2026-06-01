@@ -136,9 +136,9 @@ def test_codificar_valor_desconocido_produce_nan():
 # ── preprocesar (integración) ─────────────────────────────────────────────────
 
 def test_preprocesar_shape(df_crudo):
-    """El pipeline produce 45 columnas (44 features + riesgo_lesion) — v2.3 (19 variables)."""
+    """El pipeline produce 57 columnas (56 features + riesgo_lesion) — v2.3 + 12 ratio_ref."""
     df_out, _ = preprocesar(df_crudo)
-    assert df_out.shape[1] == 45
+    assert df_out.shape[1] == 57
 
 
 def test_preprocesar_sin_nans(df_crudo):

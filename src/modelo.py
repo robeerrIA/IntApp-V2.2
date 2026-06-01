@@ -463,9 +463,6 @@ def dividir_datos(
 
     Raises:
         ValueError: Si ``columna_objetivo`` no está presente en ``df``.
-
-    # TODO ROBERTO: puedes cambiar test_size a 0.15 si tienes pocos datos
-    #               (< 300 muestras) para dejar más ejemplos al entrenamiento.
     """
     if columna_objetivo not in df.columns:
         raise ValueError(
@@ -517,19 +514,11 @@ def entrenar_random_forest(
 
     Args:
         X_train: Matriz de features de entrenamiento.
-        y_train: Serie de etiquetas de entrenamiento (``nivel_riesgo``).
+        y_train: Serie de etiquetas de entrenamiento (``riesgo_lesion``).
         semilla: Semilla aleatoria para reproducibilidad.
 
     Returns:
         Modelo ``RandomForestClassifier`` ya ajustado.
-
-    # TODO ROBERTO: experimenta con los siguientes hiperparámetros:
-    #   - n_estimators: prueba 100, 300, 500 (más árboles = más estabilidad, más lento)
-    #   - max_depth: por defecto None (crecimiento completo); prueba 5, 10, 15
-    #     para regularizar y evitar sobreajuste
-    #   - min_samples_leaf: prueba 2 o 3 para árboles más robustos con pocos datos
-    #   - max_features: por defecto 'sqrt'; prueba 'log2' o 0.5
-    #   - Usa GridSearchCV o RandomizedSearchCV para búsqueda sistemática
     """
     logger.info("Entrenando Random Forest (n_estimators=200, class_weight='balanced')...")
 
@@ -537,11 +526,7 @@ def entrenar_random_forest(
         n_estimators=200,
         class_weight="balanced",
         random_state=semilla,
-        # TODO ROBERTO: descomenta y ajusta los parámetros que quieras experimentar:
-        # max_depth=10,
-        # min_samples_leaf=2,
-        # max_features="log2",
-        n_jobs=-1,  # usa todos los núcleos disponibles
+        n_jobs=-1,
     )
     modelo.fit(X_train, y_train)
 
@@ -570,13 +555,6 @@ def entrenar_regresion_logistica(
 
     Returns:
         Modelo ``LogisticRegression`` ya ajustado.
-
-    # TODO ROBERTO: experimenta con:
-    #   - C: parámetro de regularización inversa (por defecto 1.0)
-    #         C pequeño (ej. 0.01) → más regularización → más sesgo, menos varianza
-    #         C grande (ej. 10.0)  → menos regularización → puede sobreajustar
-    #   - penalty: 'l2' (por defecto) o 'l1' con solver='saga' para selección de features
-    #   - solver: 'lbfgs' (por defecto), 'saga' (permite l1), 'newton-cg'
     """
     logger.info(
         "Entrenando Regresión Logística (multinomial, class_weight='balanced', max_iter=1000)..."
@@ -589,9 +567,6 @@ def entrenar_regresion_logistica(
         # scikit-learn 1.5 y el parámetro quedará obsoleto en 1.7; se omite.
         solver="lbfgs",
         random_state=semilla,
-        # TODO ROBERTO: descomenta para experimentar:
-        # C=0.1,
-        # penalty="l2",
     )
     modelo.fit(X_train, y_train)
 
@@ -989,8 +964,6 @@ if __name__ == "__main__":
         default=42,
         help="Semilla aleatoria para reproducibilidad (por defecto: 42).",
     )
-    # TODO ROBERTO: añade aquí más argumentos si quieres parametrizar
-    #               n_estimators o max_depth desde la línea de comandos
     args = parser.parse_args()
 
     # --- Rutas del proyecto ---

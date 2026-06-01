@@ -367,7 +367,6 @@ El umbral del 90% tiene amplio respaldo como punto de corte mínimo entre rendim
 | YBT Composite Score (M) | < 94% | Umbral validado en baloncesto femenino | Moderado-Alto |
 | SLS valgo dinámico | ≥ 2 | Sin normas poblacionales cuantitativas | Moderado (clínico) |
 | Single-leg hop LSI | < 90% | 97–106% en deportistas sanos | Alto |
-| ACWR | < 0.8 o > 1.3 | Zona segura 0.8–1.3 (consenso IOC) | Alto |
 | NRS | > 5 = **no concluyente** (evaluación invalidada; repetir sin dolor agudo) | Umbral clínico estándar | Alto |
 | Historial lesional | ≥ 2 lesiones/12m | Umbral de Hägglund (2006) | Alto |
 
@@ -574,7 +573,42 @@ El midpoint en N/kg a 70 kg debe quedar entre el umbral mixto y la media sana mi
 
 ---
 
-## BLOQUE F — PROTOCOLO DE SCORING CLÍNICO v2.2
+## BLOQUE E2 — FEATURES DE RATIO NORMATIVO (novedad v2.3)
+
+> Esta sección documenta la innovación de feature engineering introducida en v2.3: las 12 columnas `<variable>_ratio_ref` que codifican explícitamente el déficit respecto al umbral de referencia ajustado al perfil del deportista.
+
+### Motivación
+
+Las variables de fuerza en N/kg son absolutas: un cuádriceps de 3.0 N/kg puede ser deficitario en un hombre de 25 años élite (umbral efectivo 5.2 N/kg → ratio 0.58) o perfectamente normal en una mujer de 55 años sedentaria (umbral efectivo 2.04 N/kg → ratio 1.47). Sin el ratio, el modelo necesita aprender esta interacción `nkg × género × edad × actividad` de forma implícita a partir de los datos, lo que requiere mucho más datos y profundidad de árbol.
+
+### Fórmula
+
+```
+ratio_ref = valor_nkg / (umbral_base(género, edad) × FACTORES_ACTIVIDAD[nivel])
+```
+
+donde `umbral_base` proviene de las tablas normativas de la literatura (Andrews 1996, Bohannon 1997, Owoeye 2024, Thorborg 2011/2016) detalladas en los bloques A1–A5, y `FACTORES_ACTIVIDAD` = {sedentario: 0.85, recreacional: 1.00, activo: 1.15, élite: 1.30}.
+
+### Interpretación del ratio
+
+| Ratio | Interpretación clínica |
+|---|---|
+| < 0.85 | Déficit claro respecto al perfil (> 15% por debajo del umbral) |
+| 0.85 – 1.00 | Zona gris: ligeramente por debajo del umbral |
+| 1.00 | Exactamente en el umbral de referencia para este perfil |
+| > 1.00 | Por encima del umbral; no indica riesgo por esta variable |
+
+### Variables con ratio_ref calculado (12 en total)
+
+Cuádriceps der/izq, isquiotibiales der/izq, glúteo medio der/izq, rotadores externos de cadera der/izq, aductores de cadera der/izq, tríceps sural der/izq.
+
+### Impacto en el rendimiento del modelo
+
+La incorporación de estas 12 features mejoró el F1 macro de 0.836 a 0.873 (+3.7 pp). El mayor beneficio se observó en la clase 'medio' (Recall: 74% → 82%), que es la más difícil de clasificar al ser un estado intermedio. El recall de la clase 'alto' se mantuvo en 0.961, confirmando que el modelo no perdió sensibilidad clínica.
+
+---
+
+## BLOQUE F — PROTOCOLO DE SCORING CLÍNICO v2.3
 
 > Este bloque documenta el sistema de clasificación lógico-decisional implementado en `src/generador_datos.py`. Define exactamente cómo se asigna la categoría de riesgo (bajo / medio / alto) a partir de los datos de evaluación.
 
@@ -610,10 +644,7 @@ Excepción: si NRS > 5 → categoría = **"no concluyente"** (evaluación invali
 | Single-leg squat valgo | Control | **3** | Crossley 2011 (escala cualitativa SLS); Ugalde 2015 JOSPT |
 | Single-leg hop LSI | Control | **3** | Noyes 1991; gold standard retorno al deporte |
 | Historial lesional | Contexto | **5** | Mayor predictor individual; OR 2-8 (Hägglund 2006) |
-| ACWR | Contexto | **2** | Gabbett 2016; zona segura IOC 0.8–1.3 |
-| PSS-4 | Contexto | **1** | Kenttä 2001; Nixdorf 2013 |
-| Hooper Index | Contexto | **2** | Hooper 1995; sensible a sobrecarga aguda |
-| Horas de sueño | Contexto | **2** | OR 1.7 < 8h (Milewski 2014, Pediatrics) |
+| Hooper Index | Contexto | **3** | Hooper 1995; único indicador de sueño/estrés/fatiga/recuperación tras eliminar PSS-4 y horas_sueno en v2.3 |
 | NRS dolor | Contexto | **—** | No suma score: si NRS > 5 → categoría "no concluyente" (evaluación invalidada por dolor agudo; peso_scoring=3 definido en variables.py pero no aplicado al score) |
 
 **Zona gris:** ±10 % del umbral → suma `peso × 0.5` (puntuación parcial).
@@ -647,9 +678,9 @@ Excepción: si NRS > 5 → categoría = **"no concluyente"** (evaluación invali
 
 | Regla | Condición | Justificación |
 |---|---|---|
-| **M1** | ACWR > umbral por nivel de actividad | Zona de sobrecarga; Gabbett 2016 |
+| **M1** | *(Eliminada en v2.3. ACWR retirada del protocolo; sustituida funcionalmente por Hooper Index)* | — |
 | **M2** | Historial 5–6 lesiones/12 meses (sin llegar a A3) | Historial elevado sin déficit agudo; Hägglund 2006 |
-| **M3** | PSS-4 ≥ 9 **o** Hooper ≥ 22 **Y** nivel activo/élite | Estrés elevado en deportista de alta demanda; Hooper 1995 |
+| **M3** | Hooper ≥ 22 **Y** nivel activo/élite | Estrés elevado en deportista de alta demanda; Hooper 1995. PSS-4 eliminado en v2.3 |
 | **M4** | Dorsiflexión fuera **unilateral** **Y** valgo unilateral (sin A6) | Asimetría funcional unilateral tobillo-rodilla; Willems 2005 |
 | **M5** | ≥ 3 variables de movilidad fuera de umbral | Patrón global de restricción articular; sin regla específica activa |
 | **M6** | Y-Balance CS bajo umbral en **un lado** (sin A7) | Déficit unilateral de equilibrio; Plisky 2006 (umbral predictivo) |
@@ -672,7 +703,7 @@ La confianza es informativa, no modifica la categoría de riesgo final.
 ## CONCLUSIONES PARA EL TFM
 
 ### Variables con umbral bien respaldado
-ACWR, historial lesional, NRS, single-leg hop LSI, WBLT, YBT (en las poblaciones originales de los estudios).
+Historial lesional, NRS, single-leg hop LSI, WBLT, YBT (en las poblaciones originales de los estudios).
 
 ### Variables con umbral que requiere matización en la defensa
 - **Ratio H:Q < 0.60 en HHD:** válido conceptualmente, pero el umbral numérico procede de isocinético. Declarar como limitación.

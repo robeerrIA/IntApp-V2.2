@@ -1,14 +1,15 @@
 """
-preprocesador.py — Pipeline de preprocesamiento para IntApp v2.2.
+preprocesador.py — Pipeline de preprocesamiento para IntApp v2.3.
 
 Transforma el DataFrame crudo de evaluación en un conjunto de features listo
 para el entrenamiento o la inferencia del modelo. El orden del pipeline es:
 
-    1. calcular_ratios        → ratios clínicos derivados (H:Q, ADD/ABD)
-    2. calcular_asimetrias    → asimetría bilateral (%) para cada par _der / _izq
-    3. codificar_categoricas  → encoding de genero, nivel_actividad y perfil_exigencia
-    4. eliminar_columnas_aux  → elimina columnas que no son features del modelo
-    5. normalizar             → StandardScaler sobre variables continuas
+    1. calcular_ratios           → N → N/kg; ratios clínicos H:Q y ADD/ABD
+    2. calcular_ratios_normativos → N/kg → ratio_ref por perfil (edad×género×actividad)
+    3. calcular_asimetrias       → asimetría bilateral (%) para cada par _der / _izq
+    4. codificar_categoricas     → encoding de genero y nivel_actividad
+    5. eliminar_columnas_aux     → elimina columnas auxiliares del generador
+    6. normalizar                → StandardScaler sobre variables continuas
 
 Cambios v1 → v2.2
 ------------------
@@ -18,6 +19,7 @@ ELIMINADOS del v1: ybalance_anterior/posteromedial/posterolateral (3 direcciones
 AÑADIDOS en v2.2: y_balance_cs (score compuesto), rotadores_externos_cadera,
     nivel_actividad, thomas_test (binaria bilateral).
 ELIMINADOS en v2.3: acwr, pss4, horas_sueno.
+AÑADIDOS en v2.3: 12 features ratio_ref = valor_nkg / umbral_efectivo(genero, edad, actividad).
 RATIO NUEVO: ratio_add_abd (aductores / glúteo medio, predictor inguinal).
 COLUMNA ETIQUETA: renombrada de "nivel_riesgo" a "riesgo_lesion".
 COLUMNAS AUXILIARES: score_total, confianza_score, confianza_categoria,
@@ -72,6 +74,8 @@ from src.variables import (  # noqa: E402
     COLUMNAS_MOVILIDAD,
     COLUMNAS_CONTROL,
     COLUMNAS_CONTEXTO,
+    FACTORES_ACTIVIDAD,
+    grupo_edad_clave,
 )
 
 # ---------------------------------------------------------------------------
@@ -198,7 +202,91 @@ def calcular_ratios(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ===========================================================================
-# 2. CÁLCULO DE ASIMETRÍAS BILATERALES
+# 2. RATIOS NORMATIVOS POR PERFIL (edad × género × nivel_actividad)
+# ===========================================================================
+
+# Claves de género/edad válidas en las tablas normativas de variables.py
+_CLAVES_NORMATIVAS: set[str] = {
+    "M_18_35", "M_36_50", "M_51_65",
+    "F_18_35", "F_36_50", "F_51_65",
+}
+
+
+def calcular_ratios_normativos(df: pd.DataFrame) -> pd.DataFrame:
+    """Añade ratios valor / umbral_efectivo(genero, edad, nivel_actividad).
+
+    Para cada variable de fuerza con tabla normativa estratificada calcula:
+        <var>_ratio_ref = valor_nkg / (umbral_base(genero, edad) × factor_actividad)
+
+    Ratio 1.0 → exactamente en el umbral de referencia para ese perfil.
+    Ratio < 1.0 → déficit; Ratio > 1.0 → por encima de la referencia.
+
+    Esto hace al modelo invariante ante diferencias de edad, género y nivel:
+    un cuádriceps de 3.0 N/kg es deficitario en un hombre de 25 (ratio ~0.75)
+    pero aceptable en una mujer de 55 sedentaria (ratio ~1.06).
+
+    Debe ejecutarse ANTES de codificar_categoricas (necesita genero y
+    nivel_actividad como strings).
+
+    Args:
+        df: DataFrame con columnas crudas de fuerza ya en N/kg (tras calcular_ratios)
+            más edad, genero (str) y nivel_actividad (str).
+
+    Returns:
+        Copia del DataFrame con columnas <var>_ratio_ref añadidas.
+    """
+    df = df.copy()
+
+    requeridas = {"edad", "genero", "nivel_actividad"}
+    if not requeridas.issubset(df.columns):
+        logger.warning(
+            "calcular_ratios_normativos: faltan columnas %s — paso omitido.",
+            requeridas - set(df.columns),
+        )
+        return df
+
+    # Vectorizar la clave de tabla y el factor por fila
+    genero_str = df["genero"].astype(str).str.lower().str.strip()
+    prefijo_g = genero_str.map({"masculino": "M", "femenino": "F"}).fillna("M")
+    grupo_e = df["edad"].apply(grupo_edad_clave)
+    clave_tabla_s = prefijo_g + "_" + grupo_e          # "M_18_35", "F_51_65" ...
+    factor_act_s = (
+        df["nivel_actividad"].astype(str).str.lower().str.strip()
+        .map(FACTORES_ACTIVIDAD)
+        .fillna(1.0)
+    )
+
+    for nombre_var, info in VARIABLES.items():
+        if info["bloque"] != "fuerza":
+            continue
+        tabla = info.get("umbral_riesgo_base")
+        if not isinstance(tabla, dict):
+            continue
+        # Solo tablas con estratificación por género/edad
+        lookup = {k: v for k, v in tabla.items() if k in _CLAVES_NORMATIVAS}
+        if not lookup:
+            continue
+
+        es_repeticiones = tabla.get("_unidad_umbral") == "repeticiones"
+        col_src = nombre_var if es_repeticiones else f"{nombre_var}_nkg"
+        if col_src not in df.columns:
+            continue
+
+        col_out = f"{nombre_var}_ratio_ref"
+        umbral_base_s = clave_tabla_s.map(lookup)
+        umbral_efectivo_s = (umbral_base_s * factor_act_s).replace(0, np.nan)
+        ratio = df[col_src] / umbral_efectivo_s
+
+        # Filas sin contexto suficiente → ratio neutro 1.0 (sin penalización)
+        ratio = ratio.fillna(1.0)
+        df[col_out] = ratio
+        logger.debug("Ratio normativo calculado: %s", col_out)
+
+    return df
+
+
+# ===========================================================================
+# 3. CÁLCULO DE ASIMETRÍAS BILATERALES
 # ===========================================================================
 
 def calcular_asimetrias(df: pd.DataFrame) -> pd.DataFrame:
@@ -249,7 +337,7 @@ def calcular_asimetrias(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ===========================================================================
-# 3. ENCODING DE VARIABLES CATEGÓRICAS
+# 4. ENCODING DE VARIABLES CATEGÓRICAS
 # ===========================================================================
 
 def codificar_categoricas(df: pd.DataFrame) -> pd.DataFrame:
@@ -259,7 +347,7 @@ def codificar_categoricas(df: pd.DataFrame) -> pd.DataFrame:
         - genero              : binario (masculino=0, femenino=1)
         - nivel_actividad     : ordinal (sedentario=0, recreacional=1,
                                          activo=2, elite=3)
-        - perfil_exigencia    : ordinal (1-5 → 0-4)
+
 
     Args:
         df: DataFrame con las columnas en sus valores originales.
@@ -298,7 +386,7 @@ def codificar_categoricas(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ===========================================================================
-# 4. ELIMINAR COLUMNAS AUXILIARES
+# 5. ELIMINAR COLUMNAS AUXILIARES
 # ===========================================================================
 
 def eliminar_columnas_aux(df: pd.DataFrame) -> pd.DataFrame:
@@ -323,7 +411,7 @@ def eliminar_columnas_aux(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ===========================================================================
-# 5. NORMALIZACIÓN
+# 6. NORMALIZACIÓN
 # ===========================================================================
 
 def normalizar(
@@ -386,17 +474,20 @@ def normalizar(
 
 
 # ===========================================================================
-# 6. PIPELINE COMPLETO
+# 7. PIPELINE COMPLETO
 # ===========================================================================
 
 def preprocesar(
     df: pd.DataFrame,
     scaler: Optional[StandardScaler] = None,
 ) -> tuple[pd.DataFrame, StandardScaler]:
-    """Pipeline completo: ratios → asimetrías → encoding → eliminar aux → normalizar.
+    """Pipeline completo: ratios → ratios normativos → asimetrías → encoding → eliminar aux → normalizar.
+
+    Paso 2 (calcular_ratios_normativos) requiere genero y nivel_actividad
+    como strings, por lo que debe ejecutarse antes del encoding categórico.
 
     Args:
-        df: DataFrame crudo con las columnas del protocolo v2.2.
+        df: DataFrame crudo con las columnas del protocolo v2.3.
         scaler: Scaler ya ajustado (inferencia) o None para ajustar uno nuevo
                 (entrenamiento).
 
@@ -410,24 +501,27 @@ def preprocesar(
         raise ValueError("El DataFrame de entrada está vacío.")
 
     logger.info(
-        "Inicio preprocesamiento v2.2. Filas: %d | Columnas: %d",
+        "Inicio preprocesamiento v2.3. Filas: %d | Columnas: %d",
         len(df), len(df.columns),
     )
 
     df = calcular_ratios(df)
-    logger.info("Paso 1/5: ratios clínicos calculados.")
+    logger.info("Paso 1/6: ratios clínicos y N/kg calculados.")
+
+    df = calcular_ratios_normativos(df)
+    logger.info("Paso 2/6: ratios normativos por perfil calculados.")
 
     df = calcular_asimetrias(df)
-    logger.info("Paso 2/5: asimetrías bilaterales calculadas.")
+    logger.info("Paso 3/6: asimetrías bilaterales calculadas.")
 
     df = codificar_categoricas(df)
-    logger.info("Paso 3/5: variables categóricas codificadas.")
+    logger.info("Paso 4/6: variables categóricas codificadas.")
 
     df = eliminar_columnas_aux(df)
-    logger.info("Paso 4/5: columnas auxiliares eliminadas.")
+    logger.info("Paso 5/6: columnas auxiliares eliminadas.")
 
     df, scaler = normalizar(df, scaler=scaler)
-    logger.info("Paso 5/5: normalización aplicada.")
+    logger.info("Paso 6/6: normalización aplicada.")
 
     logger.info(
         "Preprocesamiento finalizado. Filas: %d | Columnas: %d",
@@ -438,7 +532,7 @@ def preprocesar(
 
 
 # ===========================================================================
-# 7. UTILIDAD: OBTENER LISTA DE FEATURES
+# 8. UTILIDAD: OBTENER LISTA DE FEATURES
 # ===========================================================================
 
 def obtener_columnas_features(df: pd.DataFrame) -> list[str]:
@@ -462,7 +556,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Preprocesa el dataset sintético v2.2 y guarda el resultado."
+        description="Preprocesa el dataset sintético v2.3 y guarda el resultado."
     )
     parser.add_argument("--entrada",    type=str, default=None)
     parser.add_argument("--salida",     type=str, default=None)
@@ -508,7 +602,7 @@ if __name__ == "__main__":
 
     features = obtener_columnas_features(df_procesado)
 
-    print("\n--- Resumen del preprocesamiento v2.2 ---")
+    print("\n--- Resumen del preprocesamiento v2.3 ---")
     print(f"  Archivo de entrada  : {ruta_entrada}")
     print(f"  Filas procesadas    : {len(df_procesado)}")
     print(f"  Columnas totales    : {len(df_procesado.columns)}")

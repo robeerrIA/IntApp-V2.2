@@ -25,7 +25,7 @@ SEMILLA = 42
 COLUMNA = "riesgo_lesion"
 
 # ── Datos (CSV ya preprocesado y escalado) ────────────────────────────────────
-df = pd.read_csv(DIR_DATOS / "procesado_dataset_sintetico.csv")
+df = pd.read_csv(DIR_DATOS / "dataset_procesado.csv")
 df = df[df[COLUMNA] != "no_concluyente"].reset_index(drop=True)
 
 X = df.drop(columns=[COLUMNA])

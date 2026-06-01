@@ -24,7 +24,7 @@ Resumen de la versión 2.3
    suficientes ejemplos en la frontera de decisión y aprenda a discriminar.
 
 4. La etiqueta de riesgo se asigna con `generar_label()` siguiendo el modelo
-   lógico-decisional del protocolo v2.2:
+   lógico-decisional del protocolo v2.3:
    - Reglas A1-A6 (riesgo alto, booleanas).
    - Reglas M1-M5 (riesgo medio, booleanas).
    - Score ponderado total con zonas grises (puede elevar la categoría).
@@ -32,7 +32,7 @@ Resumen de la versión 2.3
 
 5. Distribución objetivo: 50 % bajo / 30 % medio / 20 % alto + ~3 % no
    concluyente. Se calibra ajustando los percentiles de las variables
-   contextuales para que las reglas v2.2 produzcan esa proporción.
+   contextuales para que las reglas v2.3 produzcan esa proporción.
 
 6. Salida adicional: el dataset incluye la columna auxiliar `confianza_score`
    (porcentaje de mediciones claras, fuera de zona gris) y `confianza_categoria`
@@ -316,7 +316,7 @@ def _generar_bloque_control(n: int, rng: np.random.Generator) -> pd.DataFrame:
 def _generar_bloque_contexto(n: int, rng: np.random.Generator) -> pd.DataFrame:
     """
     Bloque contexto: edad, género, peso, nivel de actividad, historial lesional,
-    NRS, ACWR, índice de estrés.
+    NRS y Hooper Index.
 
     El género, el peso, la edad y el nivel de actividad se generan ANTES que la
     fuerza (el bloque de fuerza los necesita para aplicar los factores correctores).
@@ -720,13 +720,13 @@ def _evaluar_fila(fila: pd.Series) -> dict:
 
 
 # =============================================================================
-# FUNCIÓN DE ETIQUETADO DE RIESGO (v2.2)
+# FUNCIÓN DE ETIQUETADO DE RIESGO (v2.3)
 # =============================================================================
 
 def generar_label(df: pd.DataFrame) -> pd.DataFrame:
     """
     Asigna a cada deportista categoría de riesgo + score de confianza.
-    Sigue el modelo lógico-decisional del protocolo v2.2.
+    Sigue el modelo lógico-decisional del protocolo v2.3.
     """
     n = len(df)
 
@@ -790,11 +790,11 @@ def generar_label(df: pd.DataFrame) -> pd.DataFrame:
 # =============================================================================
 
 def generar_dataset(n_deportistas: int = 500, semilla: int = 42) -> pd.DataFrame:
-    """Genera el dataset sintético completo siguiendo el protocolo v2.2."""
+    """Genera el dataset sintético completo siguiendo el protocolo v2.3."""
     if n_deportistas < 1:
         raise ValueError(f"n_deportistas debe ser ≥ 1, recibido: {n_deportistas}")
 
-    print(f"Generando dataset sintético v2.2 con {n_deportistas} deportistas (semilla={semilla})...")
+    print(f"Generando dataset sintético v2.3 con {n_deportistas} deportistas (semilla={semilla})...")
     rng = np.random.default_rng(semilla)
 
     print("  [1/5] Bloque contexto...")
@@ -821,7 +821,7 @@ def generar_dataset(n_deportistas: int = 500, semilla: int = 42) -> pd.DataFrame
     print("  [5/5] Inyectando casos frontera...")
     df = _inyectar_casos_frontera(df, rng)
 
-    print("  Aplicando reglas v2.2 y calculando score de confianza...")
+    print("  Aplicando reglas v2.3 y calculando score de confianza...")
     df_etiquetas = generar_label(df)
     df = pd.concat([df, df_etiquetas], axis=1)
 
@@ -852,7 +852,7 @@ if __name__ == "__main__":
     ruta_salida = Path("datos") / "sinteticos" / "dataset_sintetico.csv"
 
     print("=" * 60)
-    print("  IntApp v2.2 — Generador de datos sintéticos")
+    print("  IntApp v2.3 — Generador de datos sintéticos")
     print("=" * 60)
 
     df_sintetico = generar_dataset(n_deportistas=500, semilla=42)

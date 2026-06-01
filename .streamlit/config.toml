@@ -1,7 +1,10 @@
+[server]
+sidebarWidth = 240
+
 [theme]
 base = "light"
-primaryColor = "#1d3461"
+primaryColor = "#2d41b4"
 backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f4f8"
-textColor = "#0b0c0c"
+secondaryBackgroundColor = "#f4f6fa"
+textColor = "#1e1e1e"
 font = "sans serif"

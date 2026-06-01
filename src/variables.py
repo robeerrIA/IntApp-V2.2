@@ -1,13 +1,12 @@
 """
 variables.py — Definición central de las variables de entrada de IntApp.
 
-Versión 2.2 alineada con el Protocolo de Scoring Clínico v2.2.
+Versión 2.3 alineada con el Protocolo de Scoring Clínico v2.3.
 
 Estructura del fichero
 ----------------------
 1. Constantes globales del protocolo: factores de actividad, grupos de edad,
-   tablas de umbrales por género y edad para cada variable de fuerza, y
-   umbrales del ACWR estratificados por nivel de actividad.
+   y tablas de umbrales por género y edad para cada variable de fuerza.
 
 2. Diccionarios por bloque (FUERZA, MOVILIDAD, CONTROL, CONTEXTO) con la
    metadata de cada variable. Las medidas en Newtons se almacenan en N
@@ -62,7 +61,7 @@ Total de variables originales: 19.  # v2.3: eliminadas acwr, pss4, horas_sueno
 """
 
 # =============================================================================
-# CONSTANTES GLOBALES DEL PROTOCOLO v2.2
+# CONSTANTES GLOBALES DEL PROTOCOLO v2.3
 # =============================================================================
 
 # Factor multiplicador del umbral según el nivel de actividad del sujeto.
@@ -102,13 +101,13 @@ def grupo_edad_clave(edad: float | int) -> str:
 
 # Umbrales del score ponderado total (protocolo v2.1, sección 1.2).
 # El score puede elevar la categoría asignada por reglas, pero nunca reducirla.
-# Calibrados para que con la población sintética v2.2 (n=500, semilla=42) la
+# Calibrados para que con la población sintética v2.3 (n=4 861, 5 semillas) la
 # distribución resultante sea aproximadamente 50/30/20 (bajo/medio/alto).
 SCORE_UMBRAL_ALTO:  int = 26   # ≥ 26 → riesgo alto  (recalibrado v2.3: historial 3→5, y_balance 3→4, rotadores 2→3)
 SCORE_UMBRAL_MEDIO: int = 18   # ≥ 18 (y < 26) → riesgo medio si reglas dieron bajo
 
 
-# Anchura relativa de la zona gris alrededor del umbral efectivo (v2.2 sección 1.1).
+# Anchura relativa de la zona gris alrededor del umbral efectivo (v2.3 sección 1.1).
 # El score acumula peso × ZONA_GRIS_PUNTUACION_PARCIAL cuando el valor cae
 # dentro de la franja (umbral × (1-margen), umbral × (1+margen)).
 ZONA_GRIS_MARGEN:              float = 0.10
@@ -133,6 +132,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (80, 600),
         "tipo": "continua",
         "peso_scoring": 3,
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             # Umbrales en N/kg a nivel recreacional (referencia, factor × 1.00).
@@ -177,6 +177,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (50, 400),
         "tipo": "continua",
         "peso_scoring": 3,
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             # Umbrales en N/kg a nivel recreacional (referencia, factor × 1.00).
@@ -225,6 +226,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (40, 320),
         "tipo": "continua",
         "peso_scoring": 3,
+        "nivel_evidencia": "bajo",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             # Umbrales en N/kg a nivel recreacional (referencia, factor × 1.00).
@@ -271,6 +273,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (25, 230),
         "tipo": "continua",
         "peso_scoring": 3,   # elevado 2→3: Hollman (2009) umbral HHD directo; Ireland (2003) OR 3.1 ACL
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             # Umbrales en N/kg a nivel recreacional (referencia, factor × 1.00).
@@ -319,6 +322,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (50, 340),
         "tipo": "continua",
         "peso_scoring": 2,
+        "nivel_evidencia": "bajo",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             "M_18_35": 2.2,  "M_36_50": 1.9,  "M_51_65": 1.6,
@@ -355,6 +359,7 @@ VARIABLES_FUERZA = {
         "rango_sintetico": (5, 45),
         "tipo": "continua",
         "peso_scoring": 2,
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             # Umbrales en repeticiones (no se normalizan por peso corporal).
@@ -402,13 +407,13 @@ VARIABLES_FUERZA = {
 # =============================================================================
 # BLOQUE B: MOVILIDAD — Medidas bilaterales con umbrales universales
 # =============================================================================
-# El protocolo v2.2 sección 3 indica que las variables de movilidad NO se
+# El protocolo v2.3 sección 3 indica que las variables de movilidad NO se
 # estratifican por nivel de actividad: sus puntos de corte clínicos son
 # independientes del perfil deportivo.
 
 VARIABLES_MOVILIDAD = {
     "dorsiflexion_tobillo": {
-        "nombre_display": "Dorsiflexión tobillo — WBLT",
+        "nombre_display": "Dorsiflexión tobillo · WBLT",
         "bloque": "movilidad",
         "unidad": "cm",
         "bilateral": True,
@@ -416,6 +421,7 @@ VARIABLES_MOVILIDAD = {
         "rango_sintetico": (3, 20),
         "tipo": "continua",
         "peso_scoring": 4,   # elevado 3→4: OR 4.6 esguince (Willems 2005); mayor evidencia en movilidad
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             "umbral": 10.0,             # < 10 cm = riesgo
@@ -448,6 +454,7 @@ VARIABLES_MOVILIDAD = {
         "tipo": "binaria",
         "categorias": [0, 1],           # 0 = negativo, 1 = positivo (≥ 1 componente alterado)
         "peso_scoring": 2,
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": False,      # variable binaria → sin zona gris
         "umbral_riesgo_base": None,     # umbral universal
         "descripcion": (
@@ -471,13 +478,14 @@ VARIABLES_MOVILIDAD = {
         "bloque": "movilidad",
         "unidad": "°",
         "bilateral": True,
-        "rango_normal": (30, 50),
+        "rango_normal": (25, 50),
         "rango_sintetico": (10, 60),
         "tipo": "continua",
         "peso_scoring": 2,
+        "nivel_evidencia": "bajo",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
-            "umbral": 30.0,             # < 30° activa = riesgo
+            "umbral": 25.0,             # < 25° activa = riesgo (ajustado v2.4: Teng 2018 mide ROM pasiva con media ♂ ~28.6°; ROM activa es inferior → umbral 30° generaba falsos positivos en hombres)
             "asimetria_max": 10.0,
             "_unidad_umbral": "grados",
         },
@@ -511,6 +519,7 @@ VARIABLES_CONTROL = {
         "rango_sintetico": (60, 120),
         "tipo": "continua",
         "peso_scoring": 4,   # elevado 3→4: Plisky (2006) OR 6.5 en mujeres; predictor independiente robusto
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             "umbral_M": 89.0,           # < 89% longitud miembro en hombres
@@ -537,7 +546,7 @@ VARIABLES_CONTROL = {
         ),
     },
     "single_leg_squat_valgo": {
-        "nombre_display": "Single-leg squat — valgo dinámico",
+        "nombre_display": "Single-leg squat · valgo dinámico",
         "bloque": "control",
         "unidad": "puntuación 0-3",
         "bilateral": True,
@@ -546,6 +555,7 @@ VARIABLES_CONTROL = {
         "tipo": "ordinal",
         "categorias": [0, 1, 2, 3],
         "peso_scoring": 3,
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": False,      # escala visual ordinal → sin zona gris
         "umbral_riesgo_base": {
             "umbral": 2,                # ≥ 2 = rodilla medial al 1er dedo
@@ -580,6 +590,7 @@ VARIABLES_CONTROL = {
         "rango_sintetico": (50, 240),
         "tipo": "continua",
         "peso_scoring": 3,
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": True,
         "umbral_riesgo_base": {
             "lsi_min": 0.90,
@@ -607,7 +618,7 @@ VARIABLES_CONTROL = {
 # BLOQUE D: CONTEXTO — Variables del sujeto y de carga
 # =============================================================================
 # Incluye demográficas (edad, género, peso), nivel de actividad para
-# estratificación, historial, NRS, ACWR e índice de estrés.
+# estratificación, historial, NRS y Hooper Index.
 
 VARIABLES_CONTEXTO = {
     "edad": {
@@ -619,12 +630,13 @@ VARIABLES_CONTEXTO = {
         "rango_sintetico": (18, 65),
         "tipo": "continua",
         "peso_scoring": 0,              # variable demográfica, no entra en score
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": None,
         "descripcion": (
             "Edad del deportista en años. Se usa para seleccionar el grupo de edad "
             "(18-35 / 36-50 / 51-65) en la tabla base de umbrales de fuerza. "
-            "Población diana: 18-65 años (protocolo v2.2 sección 1)."
+            "Población diana: 18-65 años (protocolo v2.3 sección 1)."
         ),
     },
     "genero": {
@@ -635,6 +647,7 @@ VARIABLES_CONTEXTO = {
         "categorias": ["masculino", "femenino"],
         "tipo": "categorica",
         "peso_scoring": 0,
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": None,
         "descripcion": (
@@ -653,6 +666,7 @@ VARIABLES_CONTEXTO = {
         "rango_sintetico": (45, 120),
         "tipo": "continua",
         "peso_scoring": 0,
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": None,
         "descripcion": (
@@ -668,6 +682,7 @@ VARIABLES_CONTEXTO = {
         "categorias": ["sedentario", "recreacional", "activo", "elite"],
         "tipo": "categorica",
         "peso_scoring": 0,
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": None,
         "descripcion": (
@@ -688,6 +703,7 @@ VARIABLES_CONTEXTO = {
         "rango_sintetico": (0, 10),
         "tipo": "ordinal",
         "peso_scoring": 5,   # elevado 3→5: predictor #1 en la literatura (Bahr 2005; Hägglund 2006 OR 3-6×)
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": {
             "umbral_medio": 5,          # ≥ 5 = ≥ 2 lesiones MMII con baja > 7d en últimos 12 meses
@@ -721,6 +737,7 @@ VARIABLES_CONTEXTO = {
         "rango_sintetico": (0, 10),
         "tipo": "ordinal",
         "peso_scoring": 3,
+        "nivel_evidencia": "alto",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": {
             "umbral_no_concluyente": 5,  # > 5 → evaluación no concluyente (v2.1 C3)
@@ -750,6 +767,7 @@ VARIABLES_CONTEXTO = {
         "rango_sintetico": (4, 28),
         "tipo": "continua",
         "peso_scoring": 3,   # elevado 2→3 v2.3: único indicador de sueño/estrés/fatiga/recuperación
+        "nivel_evidencia": "moderado",
         "aplica_zona_gris": False,
         "umbral_riesgo_base": {
             "umbral": 22,
@@ -833,7 +851,7 @@ TOTAL_COLUMNAS = len(VARIABLES)
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("variables.py v2.2 — IntApp")
+    print("variables.py v2.3 — IntApp")
     print("=" * 60)
     print(f"Total de variables originales: {len(VARIABLES_ORIGINALES)}")
     print(f"Total de columnas expandidas:  {TOTAL_COLUMNAS}")
@@ -842,13 +860,13 @@ if __name__ == "__main__":
     print(f"  - Control:   {len(COLUMNAS_CONTROL)}")
     print(f"  - Contexto:  {len(COLUMNAS_CONTEXTO)}")
 
-    # Verificación de coherencia: todas las variables tienen los campos del v2.2
+    # Verificación de coherencia: todas las variables tienen los campos del v2.3
     campos_comunes = [
         "nombre_display", "bloque", "unidad", "bilateral",
         "tipo", "peso_scoring", "aplica_zona_gris",
         "umbral_riesgo_base", "descripcion",
     ]
-    print("\nVerificación de campos del v2.2:")
+    print("\nVerificación de campos del v2.3:")
     faltantes = []
     for clave, info in VARIABLES_ORIGINALES.items():
         # Campos comunes a todas
@@ -867,7 +885,7 @@ if __name__ == "__main__":
         for f in faltantes:
             print(f)
     else:
-        print("  OK: todas las variables tienen los campos requeridos del v2.2.")
+        print("  OK: todas las variables tienen los campos requeridos del v2.3.")
 
     # Resumen del peso total disponible para el score
     peso_total = sum(
